@@ -29,6 +29,10 @@ Hardcore_TestSetup:
 Hardcore_EnemyTrainerChooseMoves::
     call Hardcore_TestSetup
 
+    ; "We ballin'"
+    call Hardcore_PrioritizeMetronome
+    jr c, .find_best_move
+
     call Hardcore_InitializeMovePriorities
     call Hardcore_DamageTests
 
@@ -54,6 +58,27 @@ Hardcore_EnemyTrainerChooseMoves::
 
     ld [wEnemySelectedMove], a
     ret
+
+Hardcore_PrioritizeMetronome:
+    ld a, [wEnemyDisabledMove]
+    cp METRONOME
+    ret z
+
+    ld c, NUM_MOVES
+    ld hl, wEnemyMonMoves
+.loop
+    ld a, [hl+]
+    cp METRONOME
+    jr .done
+    dec c
+    jr nz, .loop
+; no metronome...
+    and a
+    ret
+.done
+    scf
+    ret
+
 
 Hardcore_HighestPriorityMove:
     ld b, 0 ; the highest priority
