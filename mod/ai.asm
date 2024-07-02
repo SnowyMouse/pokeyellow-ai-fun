@@ -60,10 +60,12 @@ Hardcore_EnemyTrainerChooseMoves::
     ret
 
 Hardcore_PrioritizeMetronome:
+    ; Metronome is disabled? :(
     ld a, [wEnemyDisabledMove]
     cp METRONOME
     ret z
 
+    ; Okay, search for it then!
     ld c, NUM_MOVES
     ld hl, wEnemyMonMoves
 .loop
@@ -77,6 +79,24 @@ Hardcore_PrioritizeMetronome:
     ret
 .done
     scf
+
+    xor a
+    ld hl, wHardcoreAIMovePriority+3
+    ld [hl-], a
+    ld [hl-], a
+    ld [hl-], a
+    ld [hl], a
+
+    call Hardcore_FlipCToA
+    ld c, a
+    ld b, 0
+    add hl, bc
+    ld a, 69
+    ld [hl], 69
+
+    
+
+
     ret
 
 
