@@ -544,8 +544,11 @@ wSimulatedJoypadStatesEnd::
 NEXTU
 wBoostExpByExpAll::
 wUnusedCC5B:: db
+wHardcoreAIMovePriority:: ds 4
+wHardcoreAITurnsToKill:: ds 4
+wHardcoreAIBuffer:: ds 4
 
-	ds 59
+	ds 47
 
 wNPCMovementDirections2:: ds 10
 ; used in Pallet Town scripted movement

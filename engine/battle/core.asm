@@ -3133,7 +3133,9 @@ SelectEnemyMove:
 	ld a, [wIsInBattle]
 	dec a
 	jr z, .chooseRandomMove ; wild encounter
-	callfar AIEnemyTrainerChooseMoves
+	; callfar AIEnemyTrainerChooseMoves
+	callfar Hardcore_EnemyTrainerChooseMoves
+	ret
 .chooseRandomMove
 	push hl
 	call BattleRandom
@@ -4836,6 +4838,7 @@ CriticalHitTest:
 	ld [wCriticalHitOrOHKO], a   ; set critical hit flag
 	ret
 
+HighCriticalMoves:
 INCLUDE "data/battle/critical_hit_moves.asm"
 
 ; function to determine if Counter hits and if so, how much damage it does
@@ -5529,6 +5532,7 @@ AIGetTypeEffectiveness:
 	ld [wTypeEffectiveness], a ; store damage multiplier
 	ret
 
+TypeEffects:
 INCLUDE "data/types/type_matchups.asm"
 
 ; some tests that need to pass for a move to hit

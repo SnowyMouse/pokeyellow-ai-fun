@@ -1,4 +1,3 @@
-TypeEffects:
 	;  attacker,     defender,     *=
 	db WATER,        FIRE,         SUPER_EFFECTIVE
 	db FIRE,         GRASS,        SUPER_EFFECTIVE

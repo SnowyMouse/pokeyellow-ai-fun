@@ -324,11 +324,7 @@ ENDC
 
 
 SECTION "bank30", ROMX
-
-; This whole bank is garbage data.
-IF !DEF(_DEBUG)
-	INCBIN "garbage/bank30.bin"
-ENDC
+INCLUDE "mod/ai.asm"
 
 
 SECTION "bank3A", ROMX
