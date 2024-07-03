@@ -16,23 +16,23 @@ INCLUDE "data/types/type_matchups.asm"
 
 Hardcore_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, ICE_BEAM
+    ld a, REST
     ld [hl+], a
-    ld a, STRENGTH
+    ld a, TAKE_DOWN
     ld [hl+], a
-    ld a, QUICK_ATTACK
+    ld a, BUBBLEBEAM
     ld [hl+], a
-    ld a, SURF
+    ld a, AURORA_BEAM
     ld [hl+], a
+
     ret
 
 Hardcore_EnemyTrainerChooseMoves::
     call Hardcore_TestSetup
-
-    ; "We ballin'"
     call Hardcore_PrioritizeMetronome
     jr c, .find_best_move
 
+    ; Damn! We don't have Metronome. Guess we have to do this the hard way.
     call Hardcore_InitializeMovePriorities
     call Hardcore_DamageTests
 
@@ -71,15 +71,15 @@ Hardcore_PrioritizeMetronome:
 .loop
     ld a, [hl+]
     cp METRONOME
-    jr .done
+    jr z, .done
     dec c
     jr nz, .loop
+
 ; no metronome...
     and a
     ret
-.done
-    scf
 
+.done
     xor a
     ld hl, wHardcoreAIMovePriority+3
     ld [hl-], a
@@ -91,12 +91,9 @@ Hardcore_PrioritizeMetronome:
     ld c, a
     ld b, 0
     add hl, bc
-    ld a, 69
     ld [hl], 69
 
-    
-
-
+    scf
     ret
 
 
@@ -451,7 +448,7 @@ Hardcore_SetDamagingBaseMovePriority:
 
     ; Accurate moves should be prioritized, if possible
     ld a, [wEnemyMoveAccuracy]
-    cp 255
+    cp 100 percent
     ld a, HARDCORE_OHKO_ACCURATE
     call z, .prioritize
 

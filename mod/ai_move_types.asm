@@ -71,6 +71,7 @@ Hardcore_TrashMoveEffects:
     db SPLASH_EFFECT
     db FOCUS_ENERGY_EFFECT
     db SWITCH_AND_TELEPORT_EFFECT
+    db TRANSFORM_EFFECT
     db -1
 
 ; Carry if in list
@@ -104,9 +105,9 @@ Hardcore_SameTurnToKOMoveScoring:
     db DRAIN_HP_EFFECT,          90
     db PARALYZE_SIDE_EFFECT2,   100
     db FREEZE_SIDE_EFFECT,      125
-    db FLINCH_SIDE_EFFECT2,     255
-    db FLINCH_SIDE_EFFECT1,     255
-    db TRAPPING_EFFECT,         255
+    db FLINCH_SIDE_EFFECT2,     250
+    db FLINCH_SIDE_EFFECT1,     250
+    db TRAPPING_EFFECT,         250
     db -1
 
 ; Get the score for the currently loaded move effect
@@ -132,6 +133,18 @@ Hardcore_GetSameTurnToKOMoveScore:
 .none_found
     inc a ; 255 -> 0 score
 .done
+
+    ; +5 score if the move is 100% accurate
+    ld b, a
+    ld a, [wEnemyMoveAccuracy]
+    cp 100 percent
+    jr nz, .clean_up
+    ld a, 5
+    add b
+    ld b, a
+    
+.clean_up
+    ld a, b
     pop bc
     pop hl
     ret

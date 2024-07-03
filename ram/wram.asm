@@ -546,7 +546,8 @@ wBoostExpByExpAll::
 wUnusedCC5B:: db
 wHardcoreAIMovePriority:: ds 4
 wHardcoreAITurnsToKill:: ds 4
-wHardcoreAIBuffer:: ds 4
+wHardcoreAIDamage:: ds 2
+wHardcoreAIBuffer:: ds 2
 
 	ds 47
 
