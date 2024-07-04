@@ -173,15 +173,22 @@ AIMod_FlipCToA:
     ret
     
 AIMod_IgnoreRedundantSideEffects:
+    ; Ignore stat raising/lowering moves if they wouldn't do anything
+    ld hl, AIMod_EffectsThatBoostStats
+    call AIMod_FindStatChangingEffect
+    jr c, .stat_boost_effect
+    ld hl, AIMod_EffectsThatDropStats
+    call AIMod_FindStatChangingEffect
+    jr c, .stat_drop_effect
+
+    ; Check other things
     ld a, [wEnemyMoveEffect]
 
-    ; Ignore healing moves if at 50% HP
+    ; Ignore healing moves if at full
     cp HEAL_EFFECT
     jr z, .heal_effect
-
-    ; Ignore draining moves if at full HP
     cp DRAIN_HP_EFFECT
-    jr z, .drain_effect
+    jr z, .heal_effect
 
     ; Ignore OHKO moves if not faster
     cp OHKO_EFFECT
@@ -233,19 +240,21 @@ AIMod_IgnoreRedundantSideEffects:
     jr AIMod_IgnoreEffect
 
 .heal_effect
-    ld hl, wEnemyMonHP
-    call AIMod_Double16
     ld de, wEnemyMonHP
     ld bc, wEnemyMonMaxHP
     call AIMod_CMP16
-    call AIMod_Halve16
-    ret nc
+    ret nz
     jr AIMod_IgnoreEffect
 
-.drain_effect
-    ld de, wEnemyMonHP
-    ld bc, wEnemyMonMaxHP
-    call AIMod_CMP16
+.stat_boost_effect
+    ld a, [bc]
+    cp 7 + 6
+    ret nz
+    jr AIMod_IgnoreEffect
+
+.stat_drop_effect
+    ld a, [bc]
+    cp 7 - 6
     ret nz
     jr AIMod_IgnoreEffect
 

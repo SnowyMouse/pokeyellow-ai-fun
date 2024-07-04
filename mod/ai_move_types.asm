@@ -43,6 +43,59 @@ AIMod_EffectsThatRaiseSpeed:
     db SPEED_UP2_EFFECT
     db -1
 
+AIMod_EffectsThatBoostStats:
+    db ATTACK_UP1_EFFECT, wEnemyMonAttackMod, 1
+    db ATTACK_UP2_EFFECT, wEnemyMonAttackMod, 2
+    db DEFENSE_UP1_EFFECT, wEnemyMonDefenseMod, 1
+    db DEFENSE_UP2_EFFECT, wEnemyMonDefenseMod, 2
+    db SPEED_UP1_EFFECT, wEnemyMonSpeedMod, 1
+    db SPEED_UP2_EFFECT, wEnemyMonSpeedMod, 2
+    db SPECIAL_UP1_EFFECT, wEnemyMonSpecialMod, 1
+    db SPECIAL_UP2_EFFECT, wEnemyMonSpecialMod, 2
+    db -1
+
+AIMod_EffectsThatDropStats:
+    db ATTACK_DOWN_SIDE_EFFECT, wBattleMonAttackMod, 1
+    db ATTACK_DOWN1_EFFECT, wBattleMonAttackMod, 1
+    db ATTACK_DOWN2_EFFECT, wBattleMonAttackMod, 2
+    db DEFENSE_DOWN_SIDE_EFFECT, wBattleMonDefenseMod, 1
+    db DEFENSE_DOWN1_EFFECT, wBattleMonDefenseMod, 1
+    db DEFENSE_DOWN2_EFFECT, wBattleMonDefenseMod, 2
+    db SPEED_DOWN_SIDE_EFFECT, wBattleMonSpeedMod, 1
+    db SPEED_DOWN1_EFFECT, wBattleMonSpeedMod, 1
+    db SPEED_DOWN2_EFFECT, wBattleMonSpeedMod, 2
+    db SPECIAL_DOWN_SIDE_EFFECT, wBattleMonSpecialMod, 1
+    db SPECIAL_DOWN1_EFFECT, wBattleMonSpecialMod, 1
+    db SPECIAL_DOWN2_EFFECT, wBattleMonSpecialMod, 2
+    db -1
+
+; Looks in HL for a stat raising/lowering move. Carry if found.
+; bc -> address to stat being modified
+; a  -> amount to modify
+AIMod_FindStatChangingEffect:
+    push de
+    ld a, [wEnemyMoveEffect]
+    ld d, a
+    ld bc, 3
+.loop
+    ld a, [hl+]
+    cp a, -1
+    jr z, .done
+    cp d
+    jr nz, .skip
+    ld a, [hl+]
+    ld b, a
+    ld a, [hl+]
+    ld c, a
+    ld a, [hl]
+    ret
+.done
+    pop de
+    ret
+.skip
+    add hl, bc
+    jr .loop
+
 AIMod_CritMoves:
     INCLUDE "data/battle/critical_hit_moves.asm"
 
