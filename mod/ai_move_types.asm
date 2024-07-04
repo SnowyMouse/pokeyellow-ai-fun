@@ -44,29 +44,29 @@ AIMod_EffectsThatRaiseSpeed:
     db -1
 
 AIMod_EffectsThatBoostStats:
-    db ATTACK_UP1_EFFECT, wEnemyMonAttackMod, 1
-    db ATTACK_UP2_EFFECT, wEnemyMonAttackMod, 2
-    db DEFENSE_UP1_EFFECT, wEnemyMonDefenseMod, 1
-    db DEFENSE_UP2_EFFECT, wEnemyMonDefenseMod, 2
-    db SPEED_UP1_EFFECT, wEnemyMonSpeedMod, 1
-    db SPEED_UP2_EFFECT, wEnemyMonSpeedMod, 2
-    db SPECIAL_UP1_EFFECT, wEnemyMonSpecialMod, 1
-    db SPECIAL_UP2_EFFECT, wEnemyMonSpecialMod, 2
+    db ATTACK_UP1_EFFECT, HIGH(wEnemyMonAttackMod), LOW(wEnemyMonAttackMod), 1
+    db ATTACK_UP2_EFFECT, HIGH(wEnemyMonAttackMod), LOW(wEnemyMonAttackMod), 2
+    db DEFENSE_UP1_EFFECT, HIGH(wEnemyMonDefenseMod), LOW(wEnemyMonDefenseMod), 1
+    db DEFENSE_UP2_EFFECT, HIGH(wEnemyMonDefenseMod), LOW(wEnemyMonDefenseMod), 2
+    db SPEED_UP1_EFFECT, HIGH(wEnemyMonSpeedMod), LOW(wEnemyMonSpeedMod), 1
+    db SPEED_UP2_EFFECT, HIGH(wEnemyMonSpeedMod), LOW(wEnemyMonSpeedMod), 2
+    db SPECIAL_UP1_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 1
+    db SPECIAL_UP2_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 2
     db -1
 
 AIMod_EffectsThatDropStats:
-    db ATTACK_DOWN_SIDE_EFFECT, wBattleMonAttackMod, 1
-    db ATTACK_DOWN1_EFFECT, wBattleMonAttackMod, 1
-    db ATTACK_DOWN2_EFFECT, wBattleMonAttackMod, 2
-    db DEFENSE_DOWN_SIDE_EFFECT, wBattleMonDefenseMod, 1
-    db DEFENSE_DOWN1_EFFECT, wBattleMonDefenseMod, 1
-    db DEFENSE_DOWN2_EFFECT, wBattleMonDefenseMod, 2
-    db SPEED_DOWN_SIDE_EFFECT, wBattleMonSpeedMod, 1
-    db SPEED_DOWN1_EFFECT, wBattleMonSpeedMod, 1
-    db SPEED_DOWN2_EFFECT, wBattleMonSpeedMod, 2
-    db SPECIAL_DOWN_SIDE_EFFECT, wBattleMonSpecialMod, 1
-    db SPECIAL_DOWN1_EFFECT, wBattleMonSpecialMod, 1
-    db SPECIAL_DOWN2_EFFECT, wBattleMonSpecialMod, 2
+    db ATTACK_DOWN_SIDE_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
+    db ATTACK_DOWN1_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
+    db ATTACK_DOWN2_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 2
+    db DEFENSE_DOWN_SIDE_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 1
+    db DEFENSE_DOWN1_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 1
+    db DEFENSE_DOWN2_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 2
+    db SPEED_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 1
+    db SPEED_DOWN1_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 1
+    db SPEED_DOWN2_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 2
+    db SPECIAL_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 1
+    db SPECIAL_DOWN1_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 1
+    db SPECIAL_DOWN2_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 2
     db -1
 
 ; Looks in HL for a stat raising/lowering move. Carry if found.
@@ -99,21 +99,6 @@ AIMod_FindStatChangingEffect:
 AIMod_CritMoves:
     INCLUDE "data/battle/critical_hit_moves.asm"
 
-AIMod_FavorableSideEffects:
-    db -1 ; TEST: REMOVE THIS LATER
-
-    db ATTACK_DOWN_SIDE_EFFECT
-    db DEFENSE_DOWN_SIDE_EFFECT
-    db SPECIAL_DOWN_SIDE_EFFECT
-    db SPEED_DOWN_SIDE_EFFECT
-    db TWINEEDLE_EFFECT
-    db SWIFT_EFFECT
-    db FLINCH_SIDE_EFFECT1
-    db FLINCH_SIDE_EFFECT2
-    db CONFUSION_SIDE_EFFECT
-    ; fallthrough
-AIMod_EffectsThatDealStatus:
-    ; fallthrough
 AIMod_EffectsThatDealStatusSideEffects:
     db PARALYZE_SIDE_EFFECT2
     db POISON_SIDE_EFFECT2
