@@ -19,17 +19,19 @@ AIMod_EffectsThatBoostStats:
     db SPECIAL_UP1_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 1
     db SPECIAL_UP2_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 2
     db -1
-AIMod_EffectsThatDropStats:
+
+AIMod_EffectsAndSideEffectsThatDropStats:
     db ATTACK_DOWN_SIDE_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
+    db DEFENSE_DOWN_SIDE_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 1
+    db SPEED_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 1
+    db SPECIAL_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 1
+AIMod_EffectsThatDropStats:
     db ATTACK_DOWN1_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
     db ATTACK_DOWN2_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 2
-    db DEFENSE_DOWN_SIDE_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 1
     db DEFENSE_DOWN1_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 1
     db DEFENSE_DOWN2_EFFECT, HIGH(wPlayerMonDefenseMod), LOW(wPlayerMonDefenseMod), 2
-    db SPEED_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 1
     db SPEED_DOWN1_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 1
     db SPEED_DOWN2_EFFECT, HIGH(wPlayerMonSpeedMod), LOW(wPlayerMonSpeedMod), 2
-    db SPECIAL_DOWN_SIDE_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 1
     db SPECIAL_DOWN1_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 1
     db SPECIAL_DOWN2_EFFECT, HIGH(wPlayerMonSpecialMod), LOW(wPlayerMonSpecialMod), 2
     db -1
@@ -62,7 +64,6 @@ AIMod_CritMoves:
 
 AIMod_EffectsThatDealStatusEffects:
     db POISON_EFFECT
-    db SLEEP_EFFECT
     db PARALYZE_EFFECT
     db SLEEP_EFFECT
     ; fallthrough

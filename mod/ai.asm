@@ -12,6 +12,7 @@ DEF AIMod_MAX_DEPRIORITIZED_MOVE EQU 1
 INCLUDE "mod/ai_move_types.asm"
 INCLUDE "mod/ai_damage_calc.asm"
 INCLUDE "mod/ai_redundant_move_effects.asm"
+INCLUDE "mod/ai_status_moves.asm"
 
 AIMod_EnemyTrainerChooseMoves::
     call AIMod_TestSetup
@@ -117,6 +118,9 @@ AIMod_DeprioritizeNoEffectMoves:
     ld a, b
     call AIMod_ReadMoveData
 
+    call AIMod_FlipCToA
+    call AIMod_ApplyEffectPatchAtIndex
+
     push hl
     call AIMod_CheckIfNoEffect
     pop hl
@@ -143,9 +147,8 @@ AIMod_ReadMoveData:
     call AddNTimes
     ld a, BANK(Moves)
     ld de, wEnemyMoveNum
-
     call FarCopyData
-
+    
     pop de
     pop hl
     pop bc
@@ -153,8 +156,24 @@ AIMod_ReadMoveData:
     ret
 
 AIMod_ReadMoveDataAtIndex:
+    push af
     call AIMod_MoveAtIndex
     call AIMod_ReadMoveData
+    pop af
+    call AIMod_ApplyEffectPatchAtIndex
+    ret
+
+AIMod_ApplyEffectPatchAtIndex:
+    push bc
+    push hl
+    ld hl, wAIModAIPatchedEffects
+    ld b, 0
+    ld c, a
+    add hl, bc
+    ld a, [hl]
+    ld [wEnemyMoveEffect], a
+    pop hl
+    pop bc
     ret
 
 AIMod_MoveAtIndex:
@@ -302,157 +321,6 @@ AIMod_CheckIfNoEffect:
     ld a, AIMod_MAX_DEPRIORITIZED_MOVE ; usable, but no effect
     ret
 
-DEF AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY EQU 5
-DEF AIMod_OHKO_MOVE_BASE_PRIORITY EQU 50
-DEF AIMod_OHKO_QUICK_ATTACK EQU 40
-DEF AIMod_OHKO_SWIFT EQU 20
-DEF AIMod_OHKO_ACCURATE EQU 10
-
-AIMod_DamageTests:
-    xor a
-    ld hl, wAIModAITurnsToKill
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl], a
-    ld [wAIModAIBuffer+1], a ; best "score" for a move with a secondary effect
-    dec a
-    ld [wAIModAIBuffer+0], a ; this will be used for storing the move with the least # of turns to kill
-
-    ; Do damage tests
-    ld b, 0
-    ld hl, AIMod_DamageTestForMove
-    call AIMod_CallHLForEachUnprioritizedMove
-
-    ; If they all have 255+ turns to KO, don't continue
-    ld a, [wAIModAIBuffer+0]
-    cp 255
-    ret z
-
-    ; Cool, let's set the priority
-    ld hl, AIMod_SetDamagingBaseMovePriority
-    call AIMod_CallHLForEachUnprioritizedMove
-
-    ret
-
-AIMod_SetDamagingBaseMovePriority:
-    ld c, a
-
-    ; skip status moves
-    ld a, [wEnemyMovePower]
-    and a
-    ret z
-
-    ; See if it is the same number of turns to kill
-    ld hl, wAIModAITurnsToKill
-    add hl, bc
-    ld a, [hl]
-    ld b, a
-    ld a, [wAIModAIBuffer+0]
-    cp b
-    jr nz, .deprioritize
-
-    ; Is it one turn to KO? If so, side effects don't matter, so we score with different criteria.
-    cp 1
-    jr z, .one_turn_to_ko
-
-    ; If not, does its score also match this?
-    call AIMod_GetSameTurnToKOMoveScore
-    ld b, a
-    ld a, [wAIModAIBuffer+1]
-    cp b
-    jr nz, .deprioritize
-    
-    ret
-
-.deprioritize
-    ld b, 0
-    ld hl, wAIModAIMovePriority
-    add hl, bc
-    ld a, [hl]
-    sub a, AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY
-    ld [hl], a
-    ret 
-
-.one_turn_to_ko
-    ; Base amount
-    ld d, AIMod_OHKO_MOVE_BASE_PRIORITY
-
-    ; If Quick Attack KOs, prioritize the hell out of it!
-    ld a, [wEnemyMoveNum]
-    cp QUICK_ATTACK
-    ld a, AIMod_OHKO_QUICK_ATTACK
-    call z, .prioritize
-
-    ; Accurate moves should be prioritized, if possible
-    ld a, [wEnemyMoveAccuracy]
-    cp 100 percent
-    ld a, AIMod_OHKO_ACCURATE
-    call z, .prioritize
-
-    ; Swift should be prioritized to avoid a Gen 1 miss
-    ld a, [wEnemyMoveEffect]
-    cp SWIFT_EFFECT
-    ld a, AIMod_OHKO_SWIFT
-    call z, .prioritize
-
-    ; Cool
-    ld hl, wAIModAIMovePriority
-    ld b, 0
-    add hl, bc
-    ld a, [hl]
-    add a, d
-    ld [hl], a
-
-    ret
-
-.prioritize
-    add d
-    ld d, a
-    ret
-
-AIMod_DamageTestForMove:
-    ld c, a
-
-    ; skip status moves
-    ld a, [wEnemyMovePower]
-    and a
-    ret z
-
-    ; Calculate damage and store the resulting number of turns to KO
-    push bc
-    call AIMod_DamageCalc
-    pop bc
-    ld hl, wAIModAITurnsToKill
-    add hl, bc
-    ld [hl], a
-
-    ; Is it a new record?
-    ld b, a
-    ld a, [wAIModAIBuffer+0]
-    cp b
-    ld hl, wAIModAIBuffer+1
-    jr z, .same ; nope, same number of turns to KO
-    ret c       ; nope, more turns to KO
-
-    ; Yes!
-    ld a, b
-    ld [wAIModAIBuffer+0], a
-
-    ; Reset score
-    xor a
-    ld [hl], a
-
-.same
-    ; Now score it based on its effect. Is it a high score?
-    call AIMod_GetSameTurnToKOMoveScore
-    ld b, a
-    ld a, [hl]
-    cp b
-    ret nc
-    ld a, b
-    ld [hl], a
-    ret
 
 ; Calls hl, loading each move and having the move slot in A.
 ;
@@ -494,103 +362,16 @@ AIMod_CallHLForEachUnprioritizedMove:
 
 AIMod_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, POUND
-    ld [hl+], a
     ld a, TACKLE
     ld [hl+], a
-    ld a, HYPNOSIS
+    ld a, BIDE
     ld [hl+], a
     ld a, SCREECH
     ld [hl+], a
-    ret
-
-AIMod_PrioritizeStatusMoves:
-    call AIMod_HavePhysicalMoves
-    call z, AIMod_DeprioritizeAttackRaisingMoves
-    ret
-
-AIMod_PatchRedundantEffects:
-    ld hl, wAIModAIPatchedEffects
-    xor a
+    ld a, NO_MOVE
     ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl], a
 
-    ld c, NUM_MOVES
-    ld hl, wEnemyMonMoves
-    ld de, wAIModAIPatchedEffects
-.loop
-    ld a, [hl+]
-    and a
-    ret z
-    
-    push hl
-    push de
-    push bc
-    call AIMod_ReadMoveDataAtIndex
-    call AIMod_PatchRedundantEffect
-    pop bc
-    pop de
-    pop hl
-
-    ld a, [wEnemyMoveEffect]
-    ld [de], a
-    dec c
-    jr nz, .loop
-
-    ret
-
-; Zero if none, non-zero if at least one
-AIMod_HavePhysicalMoves:
-    xor a
-    ld [wAIModAIBuffer], a
-    ld hl, .check_physical
-    call AIMod_CallHLForEachUnprioritizedMove
-    ld a, [wAIModAIBuffer]
-    and a
-    ret
-
-.check_physical
-    ; Ignore all special 1 damage moves and status moves
-    ld a, [wEnemyMovePower]
-    cp 2
-    ret c
-
-    ; Ignore special moves
-    ld a, [wEnemyMoveType]
-    cp SPECIAL
-    ret nc
-
-    ; Sweet! We have a physical moves.
-    ld a, 1
-    ld [wAIModAIBuffer], a
-    ret
-
-AIMod_DeprioritizeAttackRaisingMoves:
-    ld de, wAIModAIMovePriority
-    ld b, 0
-    ld hl, .check_move
-    call AIMod_CallHLForEachUnprioritizedMove
-    ret
-.check_move
-    ld c, a
-    ld a, [wEnemyMovePower]
-    and a
-    ret nz
-    
-    ld hl, AIMod_EffectsThatBoostAttack
-    call AIMod_LoadedMoveEffectInList
-    jr c, .continue
-    
-    ld hl, AIMod_EffectsThatLowerDefense
-    call AIMod_LoadedMoveEffectInList
-    ret nc
-
-.continue
-    ld hl, wAIModAIMovePriority
-    add hl, bc
-    ld a, AIMod_MAX_DEPRIORITIZED_MOVE
-    ld [hl], a
+    ld a, 6
+    ld [wPlayerMonDefenseMod], a
 
     ret

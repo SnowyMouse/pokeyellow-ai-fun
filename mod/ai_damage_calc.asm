@@ -1,3 +1,6 @@
+AIMod_TypeMatchups:
+    INCLUDE "data/types/type_matchups.asm"
+
 ; We have to re-implement the damage formula because a LOT of Gen 1 will explode if we just call the normal code
 ; (for example, Bide depends on the last amount of damage being done)
 AIMod_DamageCalc:
@@ -455,5 +458,164 @@ AIMod_CopyDamage:
     ld [hl], a
     ret
 
-AIMod_TypeMatchups:
-INCLUDE "data/types/type_matchups.asm"
+DEF AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY EQU 5
+DEF AIMod_OHKO_MOVE_BASE_PRIORITY EQU 50
+DEF AIMod_OHKO_QUICK_ATTACK EQU 40
+DEF AIMod_OHKO_SWIFT EQU 20
+DEF AIMod_OHKO_ACCURATE EQU 10
+
+AIMod_DamageTests:
+    xor a
+    ld hl, wAIModAITurnsToKill
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl], a
+    ld [wAIModAIBuffer+1], a ; best "score" for a move with a secondary effect
+    dec a
+    ld [wAIModAIBuffer+0], a ; this will be used for storing the move with the least # of turns to kill
+
+    ; Do damage tests
+    ld b, 0
+    ld hl, AIMod_DamageTestForMove
+    call AIMod_CallHLForEachUnprioritizedMove
+
+    ; If they all have 255+ turns to KO, don't continue
+    ld a, [wAIModAIBuffer+0]
+    cp 255
+    ret z
+
+    ; Cool, let's set the priority
+    ld hl, AIMod_SetDamagingBaseMovePriority
+    call AIMod_CallHLForEachUnprioritizedMove
+
+    ret
+
+AIMod_SetDamagingBaseMovePriority:
+    ld c, a
+
+    ; skip status moves
+    ld a, [wEnemyMovePower]
+    and a
+    ret z
+
+    ; skip bide
+    ld a, [wEnemyMoveEffect]
+    cp BIDE_EFFECT
+    ret z
+
+    ; See if it is the same number of turns to kill
+    ld hl, wAIModAITurnsToKill
+    add hl, bc
+    ld a, [hl]
+    ld b, a
+    ld a, [wAIModAIBuffer+0]
+    cp b
+    jr nz, .deprioritize
+
+    ; Is it one turn to KO? If so, side effects don't matter, so we score with different criteria.
+    cp 1
+    jr z, .one_turn_to_ko
+
+    ; If not, does its score also match this?
+    call AIMod_GetSameTurnToKOMoveScore
+    ld b, a
+    ld a, [wAIModAIBuffer+1]
+    cp b
+    jr nz, .deprioritize
+    
+    ret
+
+.deprioritize
+    ld b, 0
+    ld hl, wAIModAIMovePriority
+    add hl, bc
+    ld a, [hl]
+    sub a, AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY
+    ld [hl], a
+    ret 
+
+.one_turn_to_ko
+    ; Base amount
+    ld d, AIMod_OHKO_MOVE_BASE_PRIORITY
+
+    ; If Quick Attack KOs, prioritize the hell out of it!
+    ld a, [wEnemyMoveNum]
+    cp QUICK_ATTACK
+    ld a, AIMod_OHKO_QUICK_ATTACK
+    call z, .prioritize
+
+    ; Accurate moves should be prioritized, if possible
+    ld a, [wEnemyMoveAccuracy]
+    cp 100 percent
+    ld a, AIMod_OHKO_ACCURATE
+    call z, .prioritize
+
+    ; Swift should be prioritized to avoid a Gen 1 miss
+    ld a, [wEnemyMoveEffect]
+    cp SWIFT_EFFECT
+    ld a, AIMod_OHKO_SWIFT
+    call z, .prioritize
+
+    ; Cool
+    ld hl, wAIModAIMovePriority
+    ld b, 0
+    add hl, bc
+    ld a, [hl]
+    add a, d
+    ld [hl], a
+
+    ret
+
+.prioritize
+    add d
+    ld d, a
+    ret
+
+AIMod_DamageTestForMove:
+    ld c, a
+
+    ; skip status moves
+    ld a, [wEnemyMovePower]
+    and a
+    ret z
+
+    ; skip bide
+    ld a, [wEnemyMoveEffect]
+    cp BIDE
+    ret z
+
+    ; Calculate damage and store the resulting number of turns to KO
+    push bc
+    call AIMod_DamageCalc
+    pop bc
+    ld hl, wAIModAITurnsToKill
+    add hl, bc
+    ld [hl], a
+
+    ; Is it a new record?
+    ld b, a
+    ld a, [wAIModAIBuffer+0]
+    cp b
+    ld hl, wAIModAIBuffer+1
+    jr z, .same ; nope, same number of turns to KO
+    ret c       ; nope, more turns to KO
+
+    ; Yes!
+    ld a, b
+    ld [wAIModAIBuffer+0], a
+
+    ; Reset score
+    xor a
+    ld [hl], a
+
+.same
+    ; Now score it based on its effect. Is it a high score?
+    call AIMod_GetSameTurnToKOMoveScore
+    ld b, a
+    ld a, [hl]
+    cp b
+    ret nc
+    ld a, b
+    ld [hl], a
+    ret

@@ -7,7 +7,7 @@ AIMod_PatchRedundantEffect:
     ld hl, AIMod_EffectsThatBoostStats
     call AIMod_FindStatChangingEffect
     jr c, .stat_boost_effect
-    ld hl, AIMod_EffectsThatDropStats
+    ld hl, AIMod_EffectsAndSideEffectsThatDropStats
     call AIMod_FindStatChangingEffect
     jr c, .stat_drop_effect
 
@@ -205,7 +205,7 @@ AIMod_RedundantSideEffectJumpTable:
     ; fallthrough
 
 AIMod_IgnoreEffect:
-    ld [wEnemyMoveEffect], a
+    ld a, [wEnemyMoveEffect]
     cp TWINEEDLE_EFFECT
     ld a, ATTACK_TWICE_EFFECT ; downgrade twinneedle into just an attack that hits twice as far as the AI is concerned
     jr z, .continue
@@ -222,4 +222,37 @@ AIMod_IgnoreIfSubstituteUp:
     ret z
     call nz, AIMod_IgnoreEffect
     scf
+    ret
+
+AIMod_PatchRedundantEffects:
+    ld hl, wAIModAIPatchedEffects
+    xor a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl], a
+
+    ld c, NUM_MOVES
+    ld hl, wEnemyMonMoves
+    ld de, wAIModAIPatchedEffects
+.loop
+    ld a, [hl+]
+    and a
+    ret z
+    
+    push hl
+    push de
+    push bc
+    call AIMod_ReadMoveData
+    call AIMod_PatchRedundantEffect
+    pop bc
+    pop de
+    pop hl
+
+    ld a, [wEnemyMoveEffect]
+    ld [de], a
+    inc de
+    dec c
+    jr nz, .loop
+
     ret
