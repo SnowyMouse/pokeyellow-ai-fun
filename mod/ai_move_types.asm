@@ -1,48 +1,4 @@
-
-AIMod_EffectsThatDropAttack:
-    db ATTACK_DOWN_SIDE_EFFECT
-    db ATTACK_DOWN1_EFFECT
-    db ATTACK_DOWN2_EFFECT
-    db -1
-
-AIMod_EffectsThatDropDefense:
-    db DEFENSE_DOWN_SIDE_EFFECT
-    db DEFENSE_DOWN1_EFFECT
-    db DEFENSE_DOWN2_EFFECT
-    db -1
-
-AIMod_EffectsThatDropSpecial:
-    db SPECIAL_DOWN_SIDE_EFFECT
-    db SPECIAL_DOWN1_EFFECT
-    db SPECIAL_DOWN2_EFFECT
-    db -1
-
-AIMod_EffectsThatDropSpeed:
-    db SPEED_DOWN_SIDE_EFFECT
-    db SPEED_DOWN1_EFFECT
-    db SPEED_DOWN2_EFFECT
-    db -1
-
-AIMod_EffectsThatRaiseAttack:
-    db ATTACK_UP1_EFFECT
-    db ATTACK_UP2_EFFECT
-    db -1
-
-AIMod_EffectsThatRaiseDefense:
-    db DEFENSE_UP1_EFFECT
-    db DEFENSE_UP2_EFFECT
-    db -1
-
-AIMod_EffectsThatRaiseSpecial:
-    db SPECIAL_UP1_EFFECT
-    db SPECIAL_UP2_EFFECT
-    db -1
-
-AIMod_EffectsThatRaiseSpeed:
-    db SPEED_UP1_EFFECT
-    db SPEED_UP2_EFFECT
-    db -1
-
+; Ignoring evasion/accuracy moves because those will have special handling
 AIMod_EffectsThatBoostStats:
     db ATTACK_UP1_EFFECT, HIGH(wEnemyMonAttackMod), LOW(wEnemyMonAttackMod), 1
     db ATTACK_UP2_EFFECT, HIGH(wEnemyMonAttackMod), LOW(wEnemyMonAttackMod), 2
@@ -53,7 +9,6 @@ AIMod_EffectsThatBoostStats:
     db SPECIAL_UP1_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 1
     db SPECIAL_UP2_EFFECT, HIGH(wEnemyMonSpecialMod), LOW(wEnemyMonSpecialMod), 2
     db -1
-
 AIMod_EffectsThatDropStats:
     db ATTACK_DOWN_SIDE_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
     db ATTACK_DOWN1_EFFECT, HIGH(wPlayerMonAttackMod), LOW(wPlayerMonAttackMod), 1
