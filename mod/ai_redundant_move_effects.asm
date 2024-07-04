@@ -2,7 +2,7 @@ MACRO aimod_effect_jmp
 	db \1, HIGH(\2), LOW(\2)
 ENDM
     
-AIMod_IgnoreRedundantSideEffects:
+AIMod_PatchRedundantEffect:
     ; Ignore stat raising/lowering moves if they wouldn't do anything
     ld hl, AIMod_EffectsThatBoostStats
     call AIMod_FindStatChangingEffect

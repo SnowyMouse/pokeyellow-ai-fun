@@ -1,3 +1,13 @@
+AIMod_EffectsThatBoostAttack:
+    db ATTACK_UP1_EFFECT
+    db ATTACK_UP2_EFFECT
+    db -1
+
+AIMod_EffectsThatLowerDefense: ; ignoring moves that drop defense as a side effect since we don't want to deprioritize those...
+    db DEFENSE_DOWN1_EFFECT
+    db DEFENSE_DOWN2_EFFECT
+    db -1
+
 ; Ignoring evasion/accuracy moves because those will have special handling
 AIMod_EffectsThatBoostStats:
     db ATTACK_UP1_EFFECT, HIGH(wEnemyMonAttackMod), LOW(wEnemyMonAttackMod), 1
@@ -31,25 +41,21 @@ AIMod_FindStatChangingEffect:
     push de
     ld a, [wEnemyMoveEffect]
     ld d, a
-    ld bc, 3
 .loop
     ld a, [hl+]
     cp a, -1
     jr z, .done
     cp d
-    jr nz, .skip
     ld a, [hl+]
     ld b, a
     ld a, [hl+]
     ld c, a
-    ld a, [hl]
-    ret
+    ld a, [hl+]
+    jr nz, .loop
+    scf
 .done
     pop de
     ret
-.skip
-    add hl, bc
-    jr .loop
 
 AIMod_CritMoves:
     INCLUDE "data/battle/critical_hit_moves.asm"
@@ -82,7 +88,7 @@ AIMod_LevelMoveEffects:
     db NIGHT_SHADE
     db -1
 
-; Carry if in list
+; Returns carry if in list HL
 AIMod_LoadedMoveEffectInList:
     push af
     push bc

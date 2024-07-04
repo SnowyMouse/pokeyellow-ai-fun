@@ -19,7 +19,8 @@ AIMod_EnemyTrainerChooseMoves::
     jr c, .find_best_move
 
     ; Damn! We don't have Metronome. Guess we have to do this the hard way.
-    call AIMod_InitializeMovePriorities
+    call AIMod_PatchRedundantEffects
+    call AIMod_DeprioritizeNoEffectMoves
     call AIMod_DamageTests
     call AIMod_PrioritizeStatusMoves
 
@@ -98,7 +99,7 @@ AIMod_HighestPriorityMove:
     ld a, b
     ret
 
-AIMod_InitializeMovePriorities:
+AIMod_DeprioritizeNoEffectMoves:
     ld c, NUM_MOVES
     ld hl, wEnemyMonMoves
     ld de, wAIModAIMovePriority
@@ -144,7 +145,6 @@ AIMod_ReadMoveData:
     ld de, wEnemyMoveNum
 
     call FarCopyData
-    call AIMod_IgnoreRedundantSideEffects
 
     pop de
     pop hl
@@ -500,9 +500,97 @@ AIMod_TestSetup:
     ld [hl+], a
     ld a, HYPNOSIS
     ld [hl+], a
-    ld a, SUBSTITUTE
+    ld a, SCREECH
     ld [hl+], a
     ret
 
 AIMod_PrioritizeStatusMoves:
+    call AIMod_HavePhysicalMoves
+    call z, AIMod_DeprioritizeAttackRaisingMoves
+    ret
+
+AIMod_PatchRedundantEffects:
+    ld hl, wAIModAIPatchedEffects
+    xor a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl], a
+
+    ld c, NUM_MOVES
+    ld hl, wEnemyMonMoves
+    ld de, wAIModAIPatchedEffects
+.loop
+    ld a, [hl+]
+    and a
+    ret z
+    
+    push hl
+    push de
+    push bc
+    call AIMod_ReadMoveDataAtIndex
+    call AIMod_PatchRedundantEffect
+    pop bc
+    pop de
+    pop hl
+
+    ld a, [wEnemyMoveEffect]
+    ld [de], a
+    dec c
+    jr nz, .loop
+
+    ret
+
+; Zero if none, non-zero if at least one
+AIMod_HavePhysicalMoves:
+    xor a
+    ld [wAIModAIBuffer], a
+    ld hl, .check_physical
+    call AIMod_CallHLForEachUnprioritizedMove
+    ld a, [wAIModAIBuffer]
+    and a
+    ret
+
+.check_physical
+    ; Ignore all special 1 damage moves and status moves
+    ld a, [wEnemyMovePower]
+    cp 2
+    ret c
+
+    ; Ignore special moves
+    ld a, [wEnemyMoveType]
+    cp SPECIAL
+    ret nc
+
+    ; Sweet! We have a physical moves.
+    ld a, 1
+    ld [wAIModAIBuffer], a
+    ret
+
+AIMod_DeprioritizeAttackRaisingMoves:
+    ld de, wAIModAIMovePriority
+    ld b, 0
+    ld hl, .check_move
+    call AIMod_CallHLForEachUnprioritizedMove
+    ret
+.check_move
+    ld c, a
+    ld a, [wEnemyMovePower]
+    and a
+    ret nz
+    
+    ld hl, AIMod_EffectsThatBoostAttack
+    call AIMod_LoadedMoveEffectInList
+    jr c, .continue
+    
+    ld hl, AIMod_EffectsThatLowerDefense
+    call AIMod_LoadedMoveEffectInList
+    ret nc
+
+.continue
+    ld hl, wAIModAIMovePriority
+    add hl, bc
+    ld a, AIMod_MAX_DEPRIORITIZED_MOVE
+    ld [hl], a
+
     ret

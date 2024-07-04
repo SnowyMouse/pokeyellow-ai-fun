@@ -547,9 +547,10 @@ wUnusedCC5B:: db
 wAIModAIMovePriority:: ds 4
 wAIModAITurnsToKill:: ds 4
 wAIModAIDamage:: ds 2
-wAIModAIBuffer:: ds 2
+wAIModAIBuffer:: ds 4
+wAIModAIPatchedEffects:: ds 4
 
-	ds 47
+	ds 41
 
 wNPCMovementDirections2:: ds 10
 ; used in Pallet Town scripted movement
