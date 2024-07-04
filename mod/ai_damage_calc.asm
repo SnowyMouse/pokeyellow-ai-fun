@@ -446,6 +446,7 @@ AIMod_FindTypeEffectiveness:
     ld a, EFFECTIVE
     ret
 
+; Copy damage from hQuotient to wAIModAIDamge
 AIMod_CopyDamage:
     ld hl, wAIModAIDamage
     ldh a, [hQuotient+2]
@@ -453,3 +454,6 @@ AIMod_CopyDamage:
     ldh a, [hQuotient+3]
     ld [hl], a
     ret
+
+AIMod_TypeMatchups:
+INCLUDE "data/types/type_matchups.asm"

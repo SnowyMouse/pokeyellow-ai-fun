@@ -43,6 +43,9 @@ AIMod_EffectsThatRaiseSpeed:
     db SPEED_UP2_EFFECT
     db -1
 
+AIMod_CritMoves:
+    INCLUDE "data/battle/critical_hit_moves.asm"
+
 AIMod_FavorableSideEffects:
     db -1 ; TEST: REMOVE THIS LATER
 

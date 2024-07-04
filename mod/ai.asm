@@ -10,21 +10,7 @@ DEF AIMod_MAX_MOVE_PRIORITY EQU 255
 DEF AIMod_MAX_DEPRIORITIZED_MOVE EQU 1
 
 INCLUDE "mod/ai_move_types.asm"
-
-AIMod_TypeMatchups:
-INCLUDE "data/types/type_matchups.asm"
-
-AIMod_TestSetup:
-    ld hl, wEnemyMonMoves
-    ld a, SURF
-    ld [hl+], a
-    ld a, EXPLOSION
-    ld [hl+], a
-    ld a, NO_MOVE
-    ld [hl+], a
-    ld a, NO_MOVE
-    ld [hl+], a
-    ret
+INCLUDE "mod/ai_damage_calc.asm"
 
 AIMod_EnemyTrainerChooseMoves::
     call AIMod_TestSetup
@@ -544,9 +530,6 @@ AIMod_DamageTestForMove:
     ld [hl], a
     ret
 
-
-INCLUDE "mod/ai_damage_calc.asm"
-
 ; Calls hl, loading each move and having the move slot in A.
 ;
 ; BC and DE are passed through into the function.
@@ -585,5 +568,14 @@ AIMod_CallHLForEachUnprioritizedMove:
 .call_hl
     jp hl
 
-AIMod_CritMoves:
-INCLUDE "data/battle/critical_hit_moves.asm"
+AIMod_TestSetup:
+    ld hl, wEnemyMonMoves
+    ld a, SURF
+    ld [hl+], a
+    ld a, EXPLOSION
+    ld [hl+], a
+    ld a, NO_MOVE
+    ld [hl+], a
+    ld a, NO_MOVE
+    ld [hl+], a
+    ret
