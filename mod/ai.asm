@@ -16,13 +16,13 @@ INCLUDE "data/types/type_matchups.asm"
 
 Hardcore_TestSetup:
     ld hl, wEnemyMonMoves
+    ld a, MEGA_DRAIN
+    ld [hl+], a
+    ld a, DOUBLE_EDGE
+    ld [hl+], a
     ld a, REST
     ld [hl+], a
-    ld a, TAKE_DOWN
-    ld [hl+], a
-    ld a, BUBBLEBEAM
-    ld [hl+], a
-    ld a, AURORA_BEAM
+    ld a, NO_MOVE
     ld [hl+], a
 
     ret
@@ -199,11 +199,17 @@ Hardcore_IgnoreExcessiveStatBoostEffects:
 Hardcore_IgnoreRedundantSideEffects:
     ld a, [wEnemyMoveEffect]
 
-    ; Ignore healing moves if at full HP
+    ; Ignore healing moves if at 50% HP
     cp HEAL_EFFECT
     jr z, .heal_effect
+
+    ; Ignore draining moves if at full HP
     cp DRAIN_HP_EFFECT
-    jr z, .heal_effect
+    jr z, .drain_effect
+
+    ; Ignore OHKO moves if not faster
+    cp OHKO_EFFECT
+    jr z, .ohko_effect
 
     ; Ignore flinch as a side effect if slower
     cp FLINCH_SIDE_EFFECT1
@@ -240,18 +246,30 @@ Hardcore_IgnoreRedundantSideEffects:
 .confusion_side_effect
     ld a, [wPlayerBattleStatus1]
     bit CONFUSED, a
-    jr nz, Hardcore_IgnoreEffect
-    ret
+    ret nz
+    jr Hardcore_IgnoreEffect
+
+.ohko_effect
+    ld de, wBattleMonSpeed
+    ld bc, wEnemyMonSpeed
+    call Hardcore_CMP16
+    ret nc
+    jr Hardcore_IgnoreEffect
 
 .heal_effect
-    ld a, [wEnemyMonHP]
-    ld b, a
-    ld a, [wEnemyMonMaxHP]
-    cp b
-    ret nz
-    ld a, [wEnemyMonHP+1]
-    ld b, a
-    ld a, [wEnemyMonMaxHP+1]
+    ld hl, wEnemyMonHP
+    call Hardcore_Double16
+    ld de, wEnemyMonHP
+    ld bc, wEnemyMonMaxHP
+    call Hardcore_CMP16
+    call Hardcore_Halve16
+    ret nc
+    jr Hardcore_IgnoreEffect
+
+.drain_effect
+    ld de, wEnemyMonHP
+    ld bc, wEnemyMonMaxHP
+    call Hardcore_CMP16
     ret nz
     jr Hardcore_IgnoreEffect
 
@@ -264,6 +282,57 @@ Hardcore_IgnoreEffect:
     ld [wEnemyMoveEffect], a
     ret
 
+; Compare DE to BC.
+;
+; If DE == BC, NC/ Z
+; If DE >  BC,  C/NZ
+; If DE <  BC, NC/NZ
+Hardcore_CMP16:
+    ; Check upper 8 bits
+    push hl
+    ld a, [de]
+    ld l, a
+    ld a, [bc]
+    cp l
+    pop hl
+    ret nz
+    push hl
+
+    ; Now the lower 8 bits
+    inc de
+    ld a, [de]
+    dec de
+    ld l, a
+    inc bc
+    ld a, [bc]
+    dec bc
+    cp l
+
+    pop hl
+    ret
+
+; Double the 16-bit value at hl
+Hardcore_Double16:
+    push af
+    inc hl
+    sla [hl]
+    dec hl
+    ld a, [hl]
+    rla
+    ld [hl], a
+    pop af
+    ret
+
+; Halve the 16-bit value at hl
+Hardcore_Halve16:
+    push af
+    srl [hl]
+    inc hl
+    ld a, [hl]
+    rra
+    ld [hl-], a
+    pop af
+    ret
     
 Hardcore_CopyPlayerSpeedToDividend:
     xor a

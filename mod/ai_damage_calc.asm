@@ -1,6 +1,9 @@
 ; We have to re-implement the damage formula because a LOT of Gen 1 will explode if we just call the normal code
 ; (for example, Bide depends on the last amount of damage being done)
 Hardcore_DamageCalc:
+    ld a, 5 ; STUB
+    ret
+
     xor a
     ld hl, wHardcoreAIDamage
     ld [hl+], a

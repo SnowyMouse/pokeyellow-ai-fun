@@ -94,31 +94,31 @@ Hardcore_LoadedMoveEffectInList:
 ; If we have multiple moves with the same number of turns to KO, prioritize moves with good effects 
 ; higher score = better
 Hardcore_SameTurnToKOMoveScoring:
-    db DEFENSE_DOWN_SIDE_EFFECT, 40
-    db POISON_SIDE_EFFECT1,      40
-    db POISON_SIDE_EFFECT2,      40
-    db SPECIAL_DAMAGE_EFFECT,    50
-    db SWIFT_EFFECT,             50
-    db CONFUSION_SIDE_EFFECT,    80
-    db BURN_SIDE_EFFECT1,        90
-    db BURN_SIDE_EFFECT2,        90
-    db DRAIN_HP_EFFECT,          90
-    db PARALYZE_SIDE_EFFECT2,   100
-    db FREEZE_SIDE_EFFECT,      125
-    db FLINCH_SIDE_EFFECT2,     250
-    db FLINCH_SIDE_EFFECT1,     250
-    db TRAPPING_EFFECT,         250
+    db DEFENSE_DOWN_SIDE_EFFECT, 10
+    db POISON_SIDE_EFFECT1,      20
+    db POISON_SIDE_EFFECT2,      30
+    db SPEED_DOWN_SIDE_EFFECT,   40
+    db ATTACK_DOWN_SIDE_EFFECT,  50
+    db SPECIAL_DOWN_SIDE_EFFECT, 60
+    db SPECIAL_DAMAGE_EFFECT,    70
+    db SWIFT_EFFECT,             80
+    db CONFUSION_SIDE_EFFECT,    90
+    db BURN_SIDE_EFFECT1,       100
+    db BURN_SIDE_EFFECT2,       110
+    db DRAIN_HP_EFFECT,         120
+    db PARALYZE_SIDE_EFFECT1,   130
+    db PARALYZE_SIDE_EFFECT2,   140
+    db FREEZE_SIDE_EFFECT,      150
+    db FLINCH_SIDE_EFFECT1,     200
+    db FLINCH_SIDE_EFFECT2,     220
+    db TRAPPING_EFFECT,         240
     db -1
 
 ; Get the score for the currently loaded move effect
 Hardcore_GetSameTurnToKOMoveScore:
-    ; return 0 if no effect
-    ld a, [wEnemyMoveEffect]
-    and a
-    ret z
-
     push hl
     push bc
+    ld a, [wEnemyMoveEffect]
     ld b, a
     ld hl, Hardcore_SameTurnToKOMoveScoring
 
