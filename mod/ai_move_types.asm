@@ -1,49 +1,49 @@
 
-Hardcore_EffectsThatDropAttack:
+AIMod_EffectsThatDropAttack:
     db ATTACK_DOWN_SIDE_EFFECT
     db ATTACK_DOWN1_EFFECT
     db ATTACK_DOWN2_EFFECT
     db -1
 
-Hardcore_EffectsThatDropDefense:
+AIMod_EffectsThatDropDefense:
     db DEFENSE_DOWN_SIDE_EFFECT
     db DEFENSE_DOWN1_EFFECT
     db DEFENSE_DOWN2_EFFECT
     db -1
 
-Hardcore_EffectsThatDropSpecial:
+AIMod_EffectsThatDropSpecial:
     db SPECIAL_DOWN_SIDE_EFFECT
     db SPECIAL_DOWN1_EFFECT
     db SPECIAL_DOWN2_EFFECT
     db -1
 
-Hardcore_EffectsThatDropSpeed:
+AIMod_EffectsThatDropSpeed:
     db SPEED_DOWN_SIDE_EFFECT
     db SPEED_DOWN1_EFFECT
     db SPEED_DOWN2_EFFECT
     db -1
 
-Hardcore_EffectsThatRaiseAttack:
+AIMod_EffectsThatRaiseAttack:
     db ATTACK_UP1_EFFECT
     db ATTACK_UP2_EFFECT
     db -1
 
-Hardcore_EffectsThatRaiseDefense:
+AIMod_EffectsThatRaiseDefense:
     db DEFENSE_UP1_EFFECT
     db DEFENSE_UP2_EFFECT
     db -1
 
-Hardcore_EffectsThatRaiseSpecial:
+AIMod_EffectsThatRaiseSpecial:
     db SPECIAL_UP1_EFFECT
     db SPECIAL_UP2_EFFECT
     db -1
 
-Hardcore_EffectsThatRaiseSpeed:
+AIMod_EffectsThatRaiseSpeed:
     db SPEED_UP1_EFFECT
     db SPEED_UP2_EFFECT
     db -1
 
-Hardcore_FavorableSideEffects:
+AIMod_FavorableSideEffects:
     db -1 ; TEST: REMOVE THIS LATER
 
     db ATTACK_DOWN_SIDE_EFFECT
@@ -56,9 +56,9 @@ Hardcore_FavorableSideEffects:
     db FLINCH_SIDE_EFFECT2
     db CONFUSION_SIDE_EFFECT
     ; fallthrough
-Hardcore_EffectsThatDealStatus:
+AIMod_EffectsThatDealStatus:
     ; fallthrough
-Hardcore_EffectsThatDealStatusSideEffects:
+AIMod_EffectsThatDealStatusSideEffects:
     db PARALYZE_SIDE_EFFECT2
     db POISON_SIDE_EFFECT2
     db BURN_SIDE_EFFECT2
@@ -66,7 +66,7 @@ Hardcore_EffectsThatDealStatusSideEffects:
     db FREEZE_SIDE_EFFECT
     db -1
 
-Hardcore_TrashMoveEffects:
+AIMod_TrashMoveEffects:
     db RAGE_EFFECT
     db SPLASH_EFFECT
     db FOCUS_ENERGY_EFFECT
@@ -74,13 +74,13 @@ Hardcore_TrashMoveEffects:
     db TRANSFORM_EFFECT
     db -1
 
-Hardcore_LevelMoveEffects:
+AIMod_LevelMoveEffects:
     db SEISMIC_TOSS
     db NIGHT_SHADE
     db -1
 
 ; Carry if in list
-Hardcore_LoadedMoveEffectInList:
+AIMod_LoadedMoveEffectInList:
     push af
     push bc
     ld a, [wEnemyMoveEffect]
@@ -104,7 +104,7 @@ Hardcore_LoadedMoveEffectInList:
 
 ; If we have multiple moves with the same number of turns to KO, prioritize moves with good effects 
 ; higher score = better
-Hardcore_SameTurnToKOMoveScoring:
+AIMod_SameTurnToKOMoveScoring:
     db DEFENSE_DOWN_SIDE_EFFECT, 10
     db POISON_SIDE_EFFECT1,      20
     db POISON_SIDE_EFFECT2,      30
@@ -126,12 +126,12 @@ Hardcore_SameTurnToKOMoveScoring:
     db -1
 
 ; Get the score for the currently loaded move effect
-Hardcore_GetSameTurnToKOMoveScore:
+AIMod_GetSameTurnToKOMoveScore:
     push hl
     push bc
     ld a, [wEnemyMoveEffect]
     ld b, a
-    ld hl, Hardcore_SameTurnToKOMoveScoring
+    ld hl, AIMod_SameTurnToKOMoveScoring
 
 .loop
     ld a, [hl+]

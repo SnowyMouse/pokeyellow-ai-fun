@@ -544,10 +544,10 @@ wSimulatedJoypadStatesEnd::
 NEXTU
 wBoostExpByExpAll::
 wUnusedCC5B:: db
-wHardcoreAIMovePriority:: ds 4
-wHardcoreAITurnsToKill:: ds 4
-wHardcoreAIDamage:: ds 2
-wHardcoreAIBuffer:: ds 2
+wAIModAIMovePriority:: ds 4
+wAIModAITurnsToKill:: ds 4
+wAIModAIDamage:: ds 2
+wAIModAIBuffer:: ds 2
 
 	ds 47
 

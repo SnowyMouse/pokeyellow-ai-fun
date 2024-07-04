@@ -5,16 +5,16 @@
 ; 2+ = priority (higher = better)
 ; Default = 127
 
-DEF HARDCORE_DEFAULT_MOVE_PRIORITY EQU 127
-DEF HARDCORE_MAX_MOVE_PRIORITY EQU 255
-DEF HARDCORE_MAX_DEPRIORITIZED_MOVE EQU 1
+DEF AIMod_DEFAULT_MOVE_PRIORITY EQU 127
+DEF AIMod_MAX_MOVE_PRIORITY EQU 255
+DEF AIMod_MAX_DEPRIORITIZED_MOVE EQU 1
 
 INCLUDE "mod/ai_move_types.asm"
 
-Hardcore_TypeMatchups:
+AIMod_TypeMatchups:
 INCLUDE "data/types/type_matchups.asm"
 
-Hardcore_TestSetup:
+AIMod_TestSetup:
     ld hl, wEnemyMonMoves
     ld a, SURF
     ld [hl+], a
@@ -26,22 +26,22 @@ Hardcore_TestSetup:
     ld [hl+], a
     ret
 
-Hardcore_EnemyTrainerChooseMoves::
-    call Hardcore_TestSetup
-    call Hardcore_PrioritizeMetronome
+AIMod_EnemyTrainerChooseMoves::
+    call AIMod_TestSetup
+    call AIMod_PrioritizeMetronome
     jr c, .find_best_move
 
     ; Damn! We don't have Metronome. Guess we have to do this the hard way.
-    call Hardcore_InitializeMovePriorities
-    call Hardcore_DamageTests
+    call AIMod_InitializeMovePriorities
+    call AIMod_DamageTests
 
 .find_best_move
-    call Hardcore_HighestPriorityMove
+    call AIMod_HighestPriorityMove
     ld d, a
     ld b, 0
 
 .loop_until_we_get_it
-    ld hl, wHardcoreAIMovePriority
+    ld hl, wAIModAIMovePriority
     call Random
     and $3
     ld c, a
@@ -58,7 +58,7 @@ Hardcore_EnemyTrainerChooseMoves::
     ld [wEnemySelectedMove], a
     ret
 
-Hardcore_PrioritizeMetronome:
+AIMod_PrioritizeMetronome:
     ; Metronome is disabled? :(
     ld a, [wEnemyDisabledMove]
     cp METRONOME
@@ -80,13 +80,13 @@ Hardcore_PrioritizeMetronome:
 
 .done
     xor a
-    ld hl, wHardcoreAIMovePriority+3
+    ld hl, wAIModAIMovePriority+3
     ld [hl-], a
     ld [hl-], a
     ld [hl-], a
     ld [hl], a
 
-    call Hardcore_FlipCToA
+    call AIMod_FlipCToA
     ld c, a
     ld b, 0
     add hl, bc
@@ -95,10 +95,10 @@ Hardcore_PrioritizeMetronome:
     scf
     ret
 
-Hardcore_HighestPriorityMove:
+AIMod_HighestPriorityMove:
     ld b, 0 ; the highest priority
     ld c, NUM_MOVES
-    ld hl, wHardcoreAIMovePriority
+    ld hl, wAIModAIMovePriority
 .loop
     ld a, [hl+]
     cp b
@@ -110,10 +110,10 @@ Hardcore_HighestPriorityMove:
     ld a, b
     ret
 
-Hardcore_InitializeMovePriorities:
+AIMod_InitializeMovePriorities:
     ld c, NUM_MOVES
     ld hl, wEnemyMonMoves
-    ld de, wHardcoreAIMovePriority
+    ld de, wAIModAIMovePriority
 
 .init_loop
     ld a, [hl+]
@@ -126,10 +126,10 @@ Hardcore_InitializeMovePriorities:
     jr z, .set_move_priority ; set to 0 if disabled
 
     ld a, b
-    call Hardcore_ReadMoveData
+    call AIMod_ReadMoveData
 
     push hl
-    call Hardcore_CheckIfNoEffect
+    call AIMod_CheckIfNoEffect
     pop hl
 
 .set_move_priority
@@ -142,7 +142,7 @@ Hardcore_InitializeMovePriorities:
     ret
 
 
-Hardcore_ReadMoveData:
+AIMod_ReadMoveData:
     push af
     push bc
     push hl
@@ -156,7 +156,7 @@ Hardcore_ReadMoveData:
     ld de, wEnemyMoveNum
 
     call FarCopyData
-    call Hardcore_IgnoreRedundantSideEffects
+    call AIMod_IgnoreRedundantSideEffects
 
     pop de
     pop hl
@@ -164,12 +164,12 @@ Hardcore_ReadMoveData:
     pop af
     ret
 
-Hardcore_ReadMoveDataAtIndex:
-    call Hardcore_MoveAtIndex
-    call Hardcore_ReadMoveData
+AIMod_ReadMoveDataAtIndex:
+    call AIMod_MoveAtIndex
+    call AIMod_ReadMoveData
     ret
 
-Hardcore_MoveAtIndex:
+AIMod_MoveAtIndex:
     push bc
     push hl
     ld b, 0
@@ -181,12 +181,12 @@ Hardcore_MoveAtIndex:
     pop bc
     ret
 
-Hardcore_FlipCToA:
+AIMod_FlipCToA:
     ld a, NUM_MOVES
     sub c
     ret
     
-Hardcore_IgnoreRedundantSideEffects:
+AIMod_IgnoreRedundantSideEffects:
     ld a, [wEnemyMoveEffect]
 
     ; Ignore healing moves if at 50% HP
@@ -212,21 +212,21 @@ Hardcore_IgnoreRedundantSideEffects:
     jr z, .confusion_side_effect
 
     ; Check if this is an attacking move that deals a status.
-    ld hl, Hardcore_EffectsThatDealStatusSideEffects
-    call Hardcore_LoadedMoveEffectInList
+    ld hl, AIMod_EffectsThatDealStatusSideEffects
+    call AIMod_LoadedMoveEffectInList
     ret nc
 
     ; If so, this status won't be dealt if the opponent has a status already
     ld a, [wBattleMonStatus]
     and a
-    jr nz, Hardcore_IgnoreEffect
+    jr nz, AIMod_IgnoreEffect
 
     ; ...or their typing matches the type's move
     ld a, [wEnemyMoveType]
     ld b, a
     ld a, [wBattleMonType1]
     cp b
-    jr z, Hardcore_IgnoreEffect
+    jr z, AIMod_IgnoreEffect
     ld a, [wBattleMonType2]
     cp b
     ret nz
@@ -237,37 +237,37 @@ Hardcore_IgnoreRedundantSideEffects:
     ld a, [wPlayerBattleStatus1]
     bit CONFUSED, a
     ret nz
-    jr Hardcore_IgnoreEffect
+    jr AIMod_IgnoreEffect
 
 .ohko_effect
     ld de, wBattleMonSpeed
     ld bc, wEnemyMonSpeed
-    call Hardcore_CMP16
+    call AIMod_CMP16
     ret nc
-    jr Hardcore_IgnoreEffect
+    jr AIMod_IgnoreEffect
 
 .heal_effect
     ld hl, wEnemyMonHP
-    call Hardcore_Double16
+    call AIMod_Double16
     ld de, wEnemyMonHP
     ld bc, wEnemyMonMaxHP
-    call Hardcore_CMP16
-    call Hardcore_Halve16
+    call AIMod_CMP16
+    call AIMod_Halve16
     ret nc
-    jr Hardcore_IgnoreEffect
+    jr AIMod_IgnoreEffect
 
 .drain_effect
     ld de, wEnemyMonHP
     ld bc, wEnemyMonMaxHP
-    call Hardcore_CMP16
+    call AIMod_CMP16
     ret nz
-    jr Hardcore_IgnoreEffect
+    jr AIMod_IgnoreEffect
 
 .flinch_side_effect
-    call Hardcore_CheckIfOutspeed
+    call AIMod_CheckIfOutspeed
     ret nc
     ; fallthrough
-Hardcore_IgnoreEffect:
+AIMod_IgnoreEffect:
     ld a, NO_ADDITIONAL_EFFECT
     ld [wEnemyMoveEffect], a
     ret
@@ -277,7 +277,7 @@ Hardcore_IgnoreEffect:
 ; If DE == BC, NC/ Z
 ; If DE >  BC,  C/NZ
 ; If DE <  BC, NC/NZ
-Hardcore_CMP16:
+AIMod_CMP16:
     ; Check upper 8 bits
     push hl
     ld a, [de]
@@ -302,7 +302,7 @@ Hardcore_CMP16:
     ret
 
 ; Double the 16-bit value at hl
-Hardcore_Double16:
+AIMod_Double16:
     push af
     inc hl
     sla [hl]
@@ -314,7 +314,7 @@ Hardcore_Double16:
     ret
 
 ; Halve the 16-bit value at hl
-Hardcore_Halve16:
+AIMod_Halve16:
     push af
     srl [hl]
     inc hl
@@ -324,7 +324,7 @@ Hardcore_Halve16:
     pop af
     ret
     
-Hardcore_CopyPlayerSpeedToDividend:
+AIMod_CopyPlayerSpeedToDividend:
     xor a
     ldh [hDividend+0], a
     ldh [hDividend+1], a
@@ -335,20 +335,20 @@ Hardcore_CopyPlayerSpeedToDividend:
     ret
 
 ; Returns with carry if we do NOT outspeed
-Hardcore_CheckIfHalfOutspeed:
-    call Hardcore_CopyPlayerSpeedToDividend
+AIMod_CheckIfHalfOutspeed:
+    call AIMod_CopyPlayerSpeedToDividend
     ld a, 2
     ldh [hDivisor], a
     call Divide
-    jr Hardcore_CheckDividendVersusOurSpeed
+    jr AIMod_CheckDividendVersusOurSpeed
 
 ; Returns with carry if we do NOT outspeed
-Hardcore_CheckIfOutspeed:
-    call Hardcore_CopyPlayerSpeedToDividend
+AIMod_CheckIfOutspeed:
+    call AIMod_CopyPlayerSpeedToDividend
     ; fallthrough
 
 ; Returns with carry if we do NOT outspeed what is in hQuotient
-Hardcore_CheckDividendVersusOurSpeed:
+AIMod_CheckDividendVersusOurSpeed:
     ldh a, [hQuotient+2]
     ld b, a
     ld a, [wEnemyMonSpeed]
@@ -366,16 +366,16 @@ Hardcore_CheckDividendVersusOurSpeed:
     and a
     ret
 
-Hardcore_CheckIfNoEffect:
-    ld hl, Hardcore_TrashMoveEffects
-    call Hardcore_LoadedMoveEffectInList
+AIMod_CheckIfNoEffect:
+    ld hl, AIMod_TrashMoveEffects
+    call AIMod_LoadedMoveEffectInList
     jr c, .no_effect
 
     ld a, [wEnemyMovePower]
     and a
     jr z, .check_status_move
 
-    call Hardcore_FindOverallTypeEffectivenessOfLoadedMove
+    call AIMod_FindOverallTypeEffectivenessOfLoadedMove
     and a
     jr z, .no_effect
     jr .done
@@ -386,46 +386,46 @@ Hardcore_CheckIfNoEffect:
     jr z, .no_effect
 
 .done
-    ld a, HARDCORE_DEFAULT_MOVE_PRIORITY  ; let's continue...
+    ld a, AIMod_DEFAULT_MOVE_PRIORITY  ; let's continue...
     ret
 .no_effect
-    ld a, HARDCORE_MAX_DEPRIORITIZED_MOVE ; usable, but no effect
+    ld a, AIMod_MAX_DEPRIORITIZED_MOVE ; usable, but no effect
     ret
 
-DEF HARDCORE_NOT_BEST_DAMAGING_MOVE_DEPRIORITY EQU 5
-DEF HARDCORE_OHKO_MOVE_BASE_PRIORITY EQU 50
-DEF HARDCORE_OHKO_QUICK_ATTACK EQU 40
-DEF HARDCORE_OHKO_SWIFT EQU 20
-DEF HARDCORE_OHKO_ACCURATE EQU 10
+DEF AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY EQU 5
+DEF AIMod_OHKO_MOVE_BASE_PRIORITY EQU 50
+DEF AIMod_OHKO_QUICK_ATTACK EQU 40
+DEF AIMod_OHKO_SWIFT EQU 20
+DEF AIMod_OHKO_ACCURATE EQU 10
 
-Hardcore_DamageTests:
+AIMod_DamageTests:
     xor a
-    ld hl, wHardcoreAITurnsToKill
+    ld hl, wAIModAITurnsToKill
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl], a
-    ld [wHardcoreAIBuffer+1], a ; best "score" for a move with a secondary effect
+    ld [wAIModAIBuffer+1], a ; best "score" for a move with a secondary effect
     dec a
-    ld [wHardcoreAIBuffer+0], a ; this will be used for storing the move with the least # of turns to kill
+    ld [wAIModAIBuffer+0], a ; this will be used for storing the move with the least # of turns to kill
 
     ; Do damage tests
     ld b, 0
-    ld hl, Hardcore_DamageTestForMove
-    call Hardcore_CallHLForEachUnprioritizedMove
+    ld hl, AIMod_DamageTestForMove
+    call AIMod_CallHLForEachUnprioritizedMove
 
     ; If they all have 255+ turns to KO, don't continue
-    ld a, [wHardcoreAIBuffer+0]
+    ld a, [wAIModAIBuffer+0]
     cp 255
     ret z
 
     ; Cool, let's set the priority
-    ld hl, Hardcore_SetDamagingBaseMovePriority
-    call Hardcore_CallHLForEachUnprioritizedMove
+    ld hl, AIMod_SetDamagingBaseMovePriority
+    call AIMod_CallHLForEachUnprioritizedMove
 
     ret
 
-Hardcore_SetDamagingBaseMovePriority:
+AIMod_SetDamagingBaseMovePriority:
     ld c, a
 
     ; skip status moves
@@ -434,11 +434,11 @@ Hardcore_SetDamagingBaseMovePriority:
     ret z
 
     ; See if it is the same number of turns to kill
-    ld hl, wHardcoreAITurnsToKill
+    ld hl, wAIModAITurnsToKill
     add hl, bc
     ld a, [hl]
     ld b, a
-    ld a, [wHardcoreAIBuffer+0]
+    ld a, [wAIModAIBuffer+0]
     cp b
     jr nz, .deprioritize
 
@@ -447,9 +447,9 @@ Hardcore_SetDamagingBaseMovePriority:
     jr z, .one_turn_to_ko
 
     ; If not, does its score also match this?
-    call Hardcore_GetSameTurnToKOMoveScore
+    call AIMod_GetSameTurnToKOMoveScore
     ld b, a
-    ld a, [wHardcoreAIBuffer+1]
+    ld a, [wAIModAIBuffer+1]
     cp b
     jr nz, .deprioritize
     
@@ -457,37 +457,37 @@ Hardcore_SetDamagingBaseMovePriority:
 
 .deprioritize
     ld b, 0
-    ld hl, wHardcoreAIMovePriority
+    ld hl, wAIModAIMovePriority
     add hl, bc
     ld a, [hl]
-    sub a, HARDCORE_NOT_BEST_DAMAGING_MOVE_DEPRIORITY
+    sub a, AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY
     ld [hl], a
     ret 
 
 .one_turn_to_ko
     ; Base amount
-    ld d, HARDCORE_OHKO_MOVE_BASE_PRIORITY
+    ld d, AIMod_OHKO_MOVE_BASE_PRIORITY
 
     ; If Quick Attack KOs, prioritize the hell out of it!
     ld a, [wEnemyMoveNum]
     cp QUICK_ATTACK
-    ld a, HARDCORE_OHKO_QUICK_ATTACK
+    ld a, AIMod_OHKO_QUICK_ATTACK
     call z, .prioritize
 
     ; Accurate moves should be prioritized, if possible
     ld a, [wEnemyMoveAccuracy]
     cp 100 percent
-    ld a, HARDCORE_OHKO_ACCURATE
+    ld a, AIMod_OHKO_ACCURATE
     call z, .prioritize
 
     ; Swift should be prioritized to avoid a Gen 1 miss
     ld a, [wEnemyMoveEffect]
     cp SWIFT_EFFECT
-    ld a, HARDCORE_OHKO_SWIFT
+    ld a, AIMod_OHKO_SWIFT
     call z, .prioritize
 
     ; Cool
-    ld hl, wHardcoreAIMovePriority
+    ld hl, wAIModAIMovePriority
     ld b, 0
     add hl, bc
     ld a, [hl]
@@ -501,7 +501,7 @@ Hardcore_SetDamagingBaseMovePriority:
     ld d, a
     ret
 
-Hardcore_DamageTestForMove:
+AIMod_DamageTestForMove:
     ld c, a
 
     ; skip status moves
@@ -511,23 +511,23 @@ Hardcore_DamageTestForMove:
 
     ; Calculate damage and store the resulting number of turns to KO
     push bc
-    call Hardcore_DamageCalc
+    call AIMod_DamageCalc
     pop bc
-    ld hl, wHardcoreAITurnsToKill
+    ld hl, wAIModAITurnsToKill
     add hl, bc
     ld [hl], a
 
     ; Is it a new record?
     ld b, a
-    ld a, [wHardcoreAIBuffer+0]
+    ld a, [wAIModAIBuffer+0]
     cp b
-    ld hl, wHardcoreAIBuffer+1
+    ld hl, wAIModAIBuffer+1
     jr z, .same ; nope, same number of turns to KO
     ret c       ; nope, more turns to KO
 
     ; Yes!
     ld a, b
-    ld [wHardcoreAIBuffer+0], a
+    ld [wAIModAIBuffer+0], a
 
     ; Reset score
     xor a
@@ -535,7 +535,7 @@ Hardcore_DamageTestForMove:
 
 .same
     ; Now score it based on its effect. Is it a high score?
-    call Hardcore_GetSameTurnToKOMoveScore
+    call AIMod_GetSameTurnToKOMoveScore
     ld b, a
     ld a, [hl]
     cp b
@@ -550,21 +550,21 @@ INCLUDE "mod/ai_damage_calc.asm"
 ; Calls hl, loading each move and having the move slot in A.
 ;
 ; BC and DE are passed through into the function.
-Hardcore_CallHLForEachUnprioritizedMove:
+AIMod_CallHLForEachUnprioritizedMove:
     push bc
     push de
     ld c, NUM_MOVES
-    ld de, wHardcoreAIMovePriority
+    ld de, wAIModAIMovePriority
 .loop
     ld a, [de]
-    cp a, HARDCORE_MAX_DEPRIORITIZED_MOVE+1
+    cp a, AIMod_MAX_DEPRIORITIZED_MOVE+1
     jr c, .next
     push bc
     push de
     push hl
-    call Hardcore_FlipCToA
+    call AIMod_FlipCToA
     push af
-    call Hardcore_ReadMoveDataAtIndex
+    call AIMod_ReadMoveDataAtIndex
     pop af
     add sp, 6
     pop de
@@ -585,5 +585,5 @@ Hardcore_CallHLForEachUnprioritizedMove:
 .call_hl
     jp hl
 
-Hardcore_CritMoves:
+AIMod_CritMoves:
 INCLUDE "data/battle/critical_hit_moves.asm"

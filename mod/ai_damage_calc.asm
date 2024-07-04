@@ -1,19 +1,19 @@
 ; We have to re-implement the damage formula because a LOT of Gen 1 will explode if we just call the normal code
 ; (for example, Bide depends on the last amount of damage being done)
-Hardcore_DamageCalc:
+AIMod_DamageCalc:
     xor a
-    ld hl, wHardcoreAIDamage
+    ld hl, wAIModAIDamage
     ld [hl+], a
     ld [hl], a
 
     ; Next, actually calculate damage here.
     ld a, [wEnemyMoveEffect]
     cp SPECIAL_DAMAGE_EFFECT
-    jr z, Hardcore_DamageCalcFixedDamage
+    jr z, AIMod_DamageCalcFixedDamage
 
     ; OHKO = 65535 damage
     cp OHKO_EFFECT
-    jp z, Hardcore_DamageCalcMaxDamage
+    jp z, AIMod_DamageCalcMaxDamage
 
     ; 1 power, no side effect though. We probably ignored it earlier because it does nothing.
     ld a, [wEnemyMovePower]
@@ -22,18 +22,18 @@ Hardcore_DamageCalc:
     ret z
 
     ; fallthrough
-Hardcore_DamageCalcNonfixedDamage:
-    call Hardcore_DamageCalcNonfixedDamageCalculation
-    call Hardcore_CopyDamage
+AIMod_DamageCalcNonfixedDamage:
+    call AIMod_DamageCalcNonfixedDamageCalculation
+    call AIMod_CopyDamage
     ; fallthrough
-Hardcore_DividePlayerHPByDamage:
+AIMod_DividePlayerHPByDamage:
     ; BC / DE
     ld hl, wBattleMonHP
     ld b, [hl]
     inc hl
     ld c, [hl]
 
-    ld hl, wHardcoreAIDamage
+    ld hl, wAIModAIDamage
     ld d, [hl]
     inc hl
     ld e, [hl]
@@ -71,10 +71,10 @@ Hardcore_DividePlayerHPByDamage:
     ld a, l
     ret
 
-Hardcore_DamageCalcFixedDamage:
+AIMod_DamageCalcFixedDamage:
     ; Is it based on level?
-    ld hl, Hardcore_LevelMoveEffects
-    call Hardcore_LoadedMoveEffectInList
+    ld hl, AIMod_LevelMoveEffects
+    call AIMod_LoadedMoveEffectInList
     jr nc, .based_on_power
     ld a, [wEnemyMonLevel]
     jr .calculate
@@ -87,16 +87,16 @@ Hardcore_DamageCalcFixedDamage:
     ldh [hQuotient+1], a
     ldh [hQuotient+2], a
 .calculate
-    call Hardcore_DamageLuckScaling
-    call Hardcore_CopyDamage
-    jr Hardcore_DividePlayerHPByDamage
+    call AIMod_DamageLuckScaling
+    call AIMod_CopyDamage
+    jr AIMod_DividePlayerHPByDamage
 
-Hardcore_DamageCalcNonfixedDamageCalculation:
+AIMod_DamageCalcNonfixedDamageCalculation:
     ld a, [wEnemyMonLevel]
 
     ; Is it a critting move?
-    ld hl, Hardcore_CritMoves
-    call Hardcore_LoadedMoveEffectInList
+    ld hl, AIMod_CritMoves
+    call AIMod_LoadedMoveEffectInList
     jr nc, .calculate_level_multiplier
     ld l, a
 
@@ -252,7 +252,7 @@ Hardcore_DamageCalcNonfixedDamageCalculation:
     call Divide
 .finish_stab
     ; * N/4
-    call Hardcore_FindOverallTypeEffectivenessOfLoadedMove
+    call AIMod_FindOverallTypeEffectivenessOfLoadedMove
     ldh [hMultiplier], a
     call Multiply
     ld b, 4
@@ -281,9 +281,9 @@ Hardcore_DamageCalcNonfixedDamageCalculation:
     ; If we did >65535 damage, cap to 65535
     ldh a, [hQuotient+1]
     and a
-    jr z, Hardcore_DamageLuckScaling
+    jr z, AIMod_DamageLuckScaling
     ; fallthrough
-Hardcore_DamageCalcMaxDamage:
+AIMod_DamageCalcMaxDamage:
     xor a
     ldh [hQuotient+0], a
     ldh [hQuotient+1], a
@@ -291,8 +291,8 @@ Hardcore_DamageCalcMaxDamage:
     ldh [hQuotient+2], a
     ldh [hQuotient+3], a
     ; fallthrough
-Hardcore_DamageLuckScaling:
-    ; Gamblers assume they're gonna win it big!
+AIMod_DamageLuckScaling:
+    ; Gamblers are here to win it big!
     ld a, [wTrainerClass]
     cp GAMBLER
     ret z
@@ -300,13 +300,13 @@ Hardcore_DamageLuckScaling:
     ; Next, scale based on accuracy
     ld a, [wEnemyMoveEffect]
     cp SWIFT_EFFECT
-    jr z, Hardcore_DamageCalcDamageRange
+    jr z, AIMod_DamageCalcDamageRange
 
     ; Don't scale 100% accurate moves. Yes, there are Gen 1 misses, but we shouldn't be too worried about that.
     ld a, [wEnemyMoveAccuracy]
     and a
     cp -1
-    jr z, Hardcore_DamageCalcDamageRange
+    jr z, AIMod_DamageCalcDamageRange
 
     ; Multiply by accuracy
     ld [hMultiplier], a
@@ -318,7 +318,7 @@ Hardcore_DamageLuckScaling:
     ldh a, [hQuotient+1]
     ldh [hQuotient+2], a
 
-Hardcore_DamageCalcDamageRange:
+AIMod_DamageCalcDamageRange:
     ; Lastly, do damage ranges.
 
     ; Damage ranges don't apply to OHKO moves.
@@ -349,7 +349,7 @@ Hardcore_DamageCalcDamageRange:
 ; Maybe not 100% accurate to Gen 1, since neutral moves can technically do 1 less damage? Don't care.
 ;
 ; Returns N/4
-Hardcore_FindOverallTypeEffectivenessOfLoadedMove:
+AIMod_FindOverallTypeEffectivenessOfLoadedMove:
     ; Fixed damage moves ignore type effectiveness
     ld a, [wEnemyMoveEffect]
     cp SPECIAL_DAMAGE_EFFECT
@@ -368,7 +368,7 @@ Hardcore_FindOverallTypeEffectivenessOfLoadedMove:
     ld c, a
     ld a, [wBattleMonType1]
     ld b, a
-    call Hardcore_FindTypeEffectiveness
+    call AIMod_FindTypeEffectiveness
     call .handle
     
     ; Stop early if Type1 = Type2
@@ -378,7 +378,7 @@ Hardcore_FindOverallTypeEffectivenessOfLoadedMove:
 
     ; Calculate second type
     ld b, a
-    call Hardcore_FindTypeEffectiveness
+    call AIMod_FindTypeEffectiveness
     call .handle
 
 .done
@@ -418,8 +418,8 @@ Hardcore_FindOverallTypeEffectivenessOfLoadedMove:
 ; B = defender type
 ; C = attacker type
 ; Returns A as type effectiveness, HL will be destroyed
-Hardcore_FindTypeEffectiveness:
-    ld hl, Hardcore_TypeMatchups
+AIMod_FindTypeEffectiveness:
+    ld hl, AIMod_TypeMatchups
 
 .loop_type_effectiveness
     ; Done?
@@ -446,8 +446,8 @@ Hardcore_FindTypeEffectiveness:
     ld a, EFFECTIVE
     ret
 
-Hardcore_CopyDamage:
-    ld hl, wHardcoreAIDamage
+AIMod_CopyDamage:
+    ld hl, wAIModAIDamage
     ldh a, [hQuotient+2]
     ld [hl+], a
     ldh a, [hQuotient+3]

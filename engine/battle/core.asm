@@ -3134,7 +3134,7 @@ SelectEnemyMove:
 	dec a
 	jr z, .chooseRandomMove ; wild encounter
 	; callfar AIEnemyTrainerChooseMoves
-	callfar Hardcore_EnemyTrainerChooseMoves
+	callfar AIMod_EnemyTrainerChooseMoves
 	ret
 .chooseRandomMove
 	push hl
