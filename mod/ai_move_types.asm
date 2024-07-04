@@ -99,11 +99,18 @@ AIMod_FindStatChangingEffect:
 AIMod_CritMoves:
     INCLUDE "data/battle/critical_hit_moves.asm"
 
+AIMod_EffectsThatDealStatusEffects:
+    db POISON_EFFECT
+    db SLEEP_EFFECT
+    db PARALYZE_EFFECT
+    db SLEEP_EFFECT
+    ; fallthrough
+
 AIMod_EffectsThatDealStatusSideEffects:
     db PARALYZE_SIDE_EFFECT2
     db POISON_SIDE_EFFECT2
     db BURN_SIDE_EFFECT2
-    ; db TWINEEDLE_EFFECT ; we can't ignore the whole effect of twineedle, so the AI won't care if this move poisons or not
+    db TWINEEDLE_EFFECT
     db FREEZE_SIDE_EFFECT
     db -1
 
