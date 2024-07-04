@@ -1,9 +1,6 @@
 ; We have to re-implement the damage formula because a LOT of Gen 1 will explode if we just call the normal code
 ; (for example, Bide depends on the last amount of damage being done)
 Hardcore_DamageCalc:
-    ld a, 5 ; STUB
-    ret
-
     xor a
     ld hl, wHardcoreAIDamage
     ld [hl+], a
@@ -14,20 +11,21 @@ Hardcore_DamageCalc:
     cp SPECIAL_DAMAGE_EFFECT
     jr z, Hardcore_DamageCalcFixedDamage
 
+    ; OHKO = 65535 damage
     cp OHKO_EFFECT
     jp z, Hardcore_DamageCalcMaxDamage
 
+    ; 1 power, no side effect though. We probably ignored it earlier because it does nothing.
+    ld a, [wEnemyMovePower]
+    cp 1
+    ld a, 255
+    ret z
+
     ; fallthrough
 Hardcore_DamageCalcNonfixedDamage:
-    call _Hardcore_DamageCalcNonfixedDamage
-    ld hl, wHardcoreAIDamage
-    ldh a, [hQuotient+2]
-    ld [hl+], a
-    ldh a, [hQuotient+3]
-    ld [hl], a
-
+    call Hardcore_DamageCalcNonfixedDamageCalculation
+    call Hardcore_CopyDamage
     ; fallthrough
-
 Hardcore_DividePlayerHPByDamage:
     ; BC / DE
     ld hl, wBattleMonHP
@@ -74,12 +72,26 @@ Hardcore_DividePlayerHPByDamage:
     ret
 
 Hardcore_DamageCalcFixedDamage:
-    ; set fixed damage
+    ; Is it based on level?
+    ld hl, Hardcore_LevelMoveEffects
+    call Hardcore_LoadedMoveEffectInList
+    jr nc, .based_on_power
+    ld a, [wEnemyMonLevel]
+    jr .calculate
+.based_on_power
+    ; The power is the damage being done
     ld a, [wEnemyMovePower]
-    ld [hl], a
+    ldh [hQuotient+3], a
+    xor a
+    ldh [hQuotient+0], a
+    ldh [hQuotient+1], a
+    ldh [hQuotient+2], a
+.calculate
+    call Hardcore_DamageLuckScaling
+    call Hardcore_CopyDamage
     jr Hardcore_DividePlayerHPByDamage
 
-_Hardcore_DamageCalcNonfixedDamage:
+Hardcore_DamageCalcNonfixedDamageCalculation:
     ld a, [wEnemyMonLevel]
 
     ; Is it a critting move?
@@ -153,27 +165,52 @@ _Hardcore_DamageCalcNonfixedDamage:
     ; If we have >= 256 in either stat, we have to quarter the stats
     ld a, d
     or b
-
     jr z, .no_quarter
 
+    srl b
+    ld a, e
+    rra
+    srl b
+    rra
+    ld c, a
+
+    srl d
+    ld a, c
+    rra
+    srl d
+    rra
+    ld e, a
+
 .no_quarter
-    ; BC = attacker
-    ; DE = defender
+    ; C = attacker
+    ; E = defender
 
     ; Explode = halve defense
     ld a, [wEnemyMoveEffect]
     cp EXPLODE_EFFECT
-    jr nz, .continue
+    jr nz, .fix_attack
     sra e
 
-.continue
+    ; Set attack and/or defense stat to 1 if 0
+.fix_attack
+    ld a, c
+    and a
+    jr nz, .fix_defense
+    ld c, 1
+.fix_defense
+    ld a, e
+    and a
+    jr nz, .finally_calculate_it
+    ld e, 1
+
+.finally_calculate_it
     ; Multiply by attack
     ld a, c
     ldh [hMultiplier], a
     call Multiply
 
     ; Divide by defense
-    ld b, 2
+    ld b, 4
     ld a, e
     ldh [hDivisor], a
     call Divide
@@ -204,15 +241,25 @@ _Hardcore_DamageCalcNonfixedDamage:
     cp c
     jr nz, .finish_stab
 .stab
+    ; * 3/2
     ld b, 3
     ld a, b
     ldh [hMultiplier], a
     call Multiply
     ld a, 2
+    ld b, 4
     ldh [hDivisor], a
     call Divide
 .finish_stab
-
+    ; * N/4
+    call Hardcore_FindOverallTypeEffectivenessOfLoadedMove
+    ldh [hMultiplier], a
+    call Multiply
+    ld b, 4
+    ld a, b
+    ldh [hDivisor], a
+    call Divide
+.finish_type_effectiveness
     ; Is it a multi-hitting move?
     ld b, 2
     ld a, [wEnemyMoveEffect]
@@ -226,18 +273,16 @@ _Hardcore_DamageCalcNonfixedDamage:
     jr z, .multihitting
     cp TRAPPING_EFFECT
     jr nz, .done_multihitting
-
 .multihitting
     ld a, b
     ldh [hMultiplier], a
     call Multiply
-
 .done_multihitting
     ; If we did >65535 damage, cap to 65535
     ldh a, [hQuotient+1]
     and a
-    jr z, Hardcore_DamageCalcScaleDamage
-
+    jr z, Hardcore_DamageLuckScaling
+    ; fallthrough
 Hardcore_DamageCalcMaxDamage:
     xor a
     ldh [hQuotient+0], a
@@ -245,17 +290,25 @@ Hardcore_DamageCalcMaxDamage:
     dec a
     ldh [hQuotient+2], a
     ldh [hQuotient+3], a
-
-Hardcore_DamageCalcScaleDamage:
-    ; Lastly, scale based on accuracy
-    ld a, [wEnemyMoveEffect]
-    cp SWIFT_EFFECT
+    ; fallthrough
+Hardcore_DamageLuckScaling:
+    ; Gamblers assume they're gonna win it big!
+    ld a, [wTrainerClass]
+    cp GAMBLER
     ret z
 
+    ; Next, scale based on accuracy
+    ld a, [wEnemyMoveEffect]
+    cp SWIFT_EFFECT
+    jr z, Hardcore_DamageCalcDamageRange
+
+    ; Don't scale 100% accurate moves. Yes, there are Gen 1 misses, but we shouldn't be too worried about that.
     ld a, [wEnemyMoveAccuracy]
-    cp a, 255
-    ret c
-    
+    and a
+    cp -1
+    jr z, Hardcore_DamageCalcDamageRange
+
+    ; Multiply by accuracy
     ld [hMultiplier], a
     call Multiply
 
@@ -265,4 +318,138 @@ Hardcore_DamageCalcScaleDamage:
     ldh a, [hQuotient+1]
     ldh [hQuotient+2], a
 
+Hardcore_DamageCalcDamageRange:
+    ; Lastly, do damage ranges.
+
+    ; Damage ranges don't apply to OHKO moves.
+    ld a, [wEnemyMoveEffect]
+    cp OHKO_EFFECT
+    ret z
+
+    ; Damage ranges don't apply to fixed damage moves.
+    ld a, [wEnemyMoveEffect]
+    cp SPECIAL_DAMAGE_EFFECT
+    ret z
+
+    ; Scientists assume worst luck. Everyone else assumes average luck, except Gamblers who have already checked out.
+    ld a, [wTrainerClass]
+    cp SCIENTIST
+    ld a, 217
+    jr z, .do_it
+    ld a, (255+217)/2
+.do_it
+    ldh [hMultiplier], a
+    call Multiply
+    ld a, 255
+    ld [hDivisor], a
+    ld b, 4
+    call Divide
+    ret
+
+; Maybe not 100% accurate to Gen 1, since neutral moves can technically do 1 less damage? Don't care.
+;
+; Returns N/4
+Hardcore_FindOverallTypeEffectivenessOfLoadedMove:
+    ; Fixed damage moves ignore type effectiveness
+    ld a, [wEnemyMoveEffect]
+    cp SPECIAL_DAMAGE_EFFECT
+    ld a, 4
+    ret z
+
+    push de
+    push bc
+    push hl
+
+    ; Start is 4/4
+    ld e, a
+
+    ; Calculate first type
+    ld a, [wEnemyMoveType]
+    ld c, a
+    ld a, [wBattleMonType1]
+    ld b, a
+    call Hardcore_FindTypeEffectiveness
+    call .handle
+    
+    ; Stop early if Type1 = Type2
+    ld a, [wBattleMonType2]
+    cp b
+    jr z, .done
+
+    ; Calculate second type
+    ld b, a
+    call Hardcore_FindTypeEffectiveness
+    call .handle
+
+.done
+    ld a, e
+    pop hl
+    pop bc
+    pop de
+    ret
+
+.handle
+    ; No effect? Okay...
+    and a
+    jr z, .no_effect
+
+    ; Supereffective? Double it!
+    cp a, SUPER_EFFECTIVE
+    jr z, .double
+
+    ; Supereffective? Double it!
+    cp a, NOT_VERY_EFFECTIVE
+    jr z, .halve
+
+    ret
+
+.double
+    sla e
+    ret
+
+.halve
+    srl e
+    ret
+
+.no_effect
+    ld e, a
+    ret
+
+; B = defender type
+; C = attacker type
+; Returns A as type effectiveness, HL will be destroyed
+Hardcore_FindTypeEffectiveness:
+    ld hl, Hardcore_TypeMatchups
+
+.loop_type_effectiveness
+    ; Done?
+    ld a, [hl+]
+    cp -1
+    jr z, .done
+
+    ; Attacker type matches?
+    cp c
+    ld a, [hl+]
+    jr nz, .next_type_effectiveness
+
+    ; Defender type matches?
+    cp b
+    ld a, [hl]
+    ret z
+
+    ; fallthrough
+.next_type_effectiveness
+    inc hl
+    jr .loop_type_effectiveness
+
+.done
+    ld a, EFFECTIVE
+    ret
+
+Hardcore_CopyDamage:
+    ld hl, wHardcoreAIDamage
+    ldh a, [hQuotient+2]
+    ld [hl+], a
+    ldh a, [hQuotient+3]
+    ld [hl], a
     ret

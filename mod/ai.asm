@@ -16,15 +16,14 @@ INCLUDE "data/types/type_matchups.asm"
 
 Hardcore_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, MEGA_DRAIN
+    ld a, SURF
     ld [hl+], a
-    ld a, DOUBLE_EDGE
-    ld [hl+], a
-    ld a, REST
+    ld a, EXPLOSION
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a
-
+    ld a, NO_MOVE
+    ld [hl+], a
     ret
 
 Hardcore_EnemyTrainerChooseMoves::
@@ -96,7 +95,6 @@ Hardcore_PrioritizeMetronome:
     scf
     ret
 
-
 Hardcore_HighestPriorityMove:
     ld b, 0 ; the highest priority
     ld c, NUM_MOVES
@@ -158,8 +156,6 @@ Hardcore_ReadMoveData:
     ld de, wEnemyMoveNum
 
     call FarCopyData
-    call Hardcore_IgnoreExcessiveStatDropEffects
-    call Hardcore_IgnoreExcessiveStatBoostEffects
     call Hardcore_IgnoreRedundantSideEffects
 
     pop de
@@ -188,12 +184,6 @@ Hardcore_MoveAtIndex:
 Hardcore_FlipCToA:
     ld a, NUM_MOVES
     sub c
-    ret
-
-Hardcore_IgnoreExcessiveStatDropEffects:
-    ret
-
-Hardcore_IgnoreExcessiveStatBoostEffects:
     ret
     
 Hardcore_IgnoreRedundantSideEffects:
@@ -385,41 +375,10 @@ Hardcore_CheckIfNoEffect:
     and a
     jr z, .check_status_move
 
-.check_type_effectiveness
-    ; Find moves that have no effect and deprioritize them.
-    ld hl, Hardcore_TypeMatchups
-    ld a, [wEnemyMoveType]
-    ld b, a
-
-.loop
-    ; We have the attacking type?
-    ld a, [hl+]
-    cp -1
-    jr z, .done
-
-    ; Is it our type?
-    cp b
-    ld a, [hl+]
-    jr nz, .next_matchup
-
-.check_defender
-    ; Is the defender type correct?
-    ld c, a
-    ld a, [wBattleMonType1]
-    cp c
-    jr z, .check_if_no_effect
-    ld a, [wBattleMonType2]
-    cp c
-    jr nz, .next_matchup
-
-.check_if_no_effect
-    ld a, [hl]
-    and a ; 0 = NO_EFFECT
+    call Hardcore_FindOverallTypeEffectivenessOfLoadedMove
+    and a
     jr z, .no_effect
-
-.next_matchup
-    inc hl
-    jr .loop
+    jr .done
 
 .check_status_move
     ld a, [wEnemyMoveEffect]
@@ -587,158 +546,6 @@ Hardcore_DamageTestForMove:
 
 
 INCLUDE "mod/ai_damage_calc.asm"
-
-
-
-; ; Do all damage tests
-; Hardcore_DamageTests:
-;     ld hl, wHardcoreAITurnsToKill
-;     ld de, wHardcoreAIMovePriority
-;     ld c, NUM_MOVES
-; .loop
-;     ld a, [de]
-;     cp a, HARDCORE_MAX_DEPRIORITIZED_MOVE+1
-;     ld a, 0
-;     jr c, .next
-
-;     call Hardcore_FlipCToA
-;     call Hardcore_ReadMoveDataAtIndex
-;     ld a, [wEnemyMovePower]
-;     and a
-;     jr z, .next
-
-;     ; Deprioritize all damaging moves by default
-;     ld a, [de]
-;     sub HARDCORE_BEST_DAMAGING_MOVE_PRIORITY
-;     ld a, [de]
-;     xor 255 ; TEST: Let's just use base power
-
-; .next
-;     ld [hl+], a
-;     inc de
-;     dec c
-;     jr nz, .loop
-
-; Hardcore_FindLeastNumberOfTurnsToKO:
-;     ; go through each damage test; prioritize whatever has the least # of turns to KO
-;     ld b, 255 ; the lowest number of turns to KO
-;     ld d, 0   ; the total number of moves with this amount
-;     ld e, 0   ; the first move with this amount
-;     ld c, NUM_MOVES
-;     ld hl, wHardcoreAITurnsToKill
-; .loop
-;     ld a, [hl+]
-;     and a
-;     jr z, .loop
-
-;     ; Is it <= number of turns to KO?
-;     cp b
-;     jr z, .increment
-;     jr c, .next
-; .new_low
-;     ld d, 0
-;     call Hardcore_FlipCToA
-;     ld e, a
-; .increment
-;     inc d
-; .next
-;     dec c
-;     jr nz, .loop
-
-;     ; Any moves that were good?
-;     ld a, d
-;     and a
-;     ret z
-
-;     ; Only one move? That makes life easier.
-;     cp 1
-;     jr z, Hardcore_PrioritizeFirstDamagingMoveFound
-
-; Hardcore_PreferMovesWithGoodSideEffects:
-;     ; More than one? Well, we will have to find moves with favorable side effects
-;     ld c, NUM_MOVES
-; .loop
-;     call Hardcore_FlipCToA
-;     call Hardcore_ReadMoveDataAtIndex
-;     ld hl, Hardcore_FavorableSideEffects
-;     call Hardcore_LoadedMoveEffectInList
-;     jr c, .found_some
-;     dec c
-;     jr z, .loop
-
-;     ; None? Guess we should prioritize them now...
-; .found_none
-;     ld c, NUM_MOVES
-; .found_none_loop
-;     call Hardcore_FlipCToA
-;     call Hardcore_PrioritizeMoveIfBestDamagingMove
-;     dec c
-;     jr nz, .found_none_loop
-;     ret
-
-; .found_some
-;     ld c, NUM_MOVES
-; .found_some_loop
-;     call Hardcore_FlipCToA
-;     ld hl, Hardcore_FavorableSideEffects
-;     call Hardcore_LoadedMoveEffectInList
-;     jr nc, .found_some_next
-;     call Hardcore_PrioritizeMoveIfBestDamagingMove
-
-; .found_some_next
-;     dec c
-;     jr nz, .found_none_loop
-;     ret
-
-; Hardcore_PrioritizeFirstDamagingMoveFound:
-;     ld a, e
-
-; Hardcore_PrioritizeBestDamagingMove:
-;     push bc
-;     push hl
-;     push de
-;     push af
-
-;     ld c, a
-;     ld b, 0
-
-;     ; Base reward = +5
-;     ld e, HARDCORE_BEST_DAMAGING_MOVE_PRIORITY
-
-;     ; Is it a OHKO? If so, boost it by 100!
-;     ld hl, wHardcoreAITurnsToKill
-;     add hl, bc
-;     ld a, [hl]
-;     cp 1
-;     ld a, e
-;     add HARDCORE_OHKO_MOVE_PRIORITY
-;     ld e, a
-
-;     jr nz, .add_it
-; .add_it
-;     ld hl, wHardcoreAIMovePriority
-;     add hl, bc
-;     ld a, [hl]
-;     add e
-;     ld [hl], a
-
-;     pop af
-;     pop de
-;     pop hl
-;     pop bc
-
-;     ret
-
-; Hardcore_PrioritizeMoveIfBestDamagingMove:
-;     ld hl, wHardcoreAITurnsToKill
-;     ld d, 0
-;     ld e, a
-;     add hl, de
-;     ld a, [hl]
-;     cp b
-;     ld a, e
-;     call z, Hardcore_PrioritizeBestDamagingMove
-;     ret
 
 ; Calls hl, loading each move and having the move slot in A.
 ;

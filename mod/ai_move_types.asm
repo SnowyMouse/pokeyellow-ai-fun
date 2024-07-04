@@ -74,8 +74,14 @@ Hardcore_TrashMoveEffects:
     db TRANSFORM_EFFECT
     db -1
 
+Hardcore_LevelMoveEffects:
+    db SEISMIC_TOSS
+    db NIGHT_SHADE
+    db -1
+
 ; Carry if in list
 Hardcore_LoadedMoveEffectInList:
+    push af
     push bc
     ld a, [wEnemyMoveEffect]
     ld b, a
@@ -86,9 +92,14 @@ Hardcore_LoadedMoveEffectInList:
     cp b
     jr nz, .loop
 .done
+    pop bc
+    pop af
     scf
+    ret
 .nope
     pop bc
+    pop af
+    and a
     ret
 
 ; If we have multiple moves with the same number of turns to KO, prioritize moves with good effects 
