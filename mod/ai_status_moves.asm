@@ -2,26 +2,41 @@ DEF AIMod_USELESS_STAT_MOD_MOVE_PENALTY EQU 30
 DEF AIMod_USEFUL_STAT_MOD_MOVE_BOOST EQU 5
 DEF AIMod_VERY_USEFUL_STAT_MOD_MOVE_BOOST EQU 10
 DEF AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY EQU 5
+DEF AIMod_STATUS_MOVE_BOOST EQU 7
+
+AIMod_StatusMovesForEach:
+    bigdw AIMod_PrioritizeBoostingMoves
+    bigdw AIMod_PrioritizeDroppingMoves
+    bigdw AIMod_PrioritizeStatusInflictingMoves
+    db -1
 
 AIMod_PrioritizeStatusMoves:
     ; If there are no physical moves, there is no reason to buff attack/lower defense.
     call AIMod_HavePhysicalMoves
     call z, AIMod_DeprioritizeAttackRaisingMoves
 
-    ; Drop/boost stats
-    ld hl, AIMod_PrioritizeBoostingMoves
-    call AIMod_CallHLForEachUnprioritizedMove
-    ld hl, AIMod_PrioritizeDroppingMoves
-    call AIMod_CallHLForEachUnprioritizedMove
-
-    ret
+    ; Try everything else!
+    ld hl, AIMod_StatusMovesForEach
+.loop
+    ld a, [hl+]
+    cp -1
+    ret z
+    ld b, a
+    ld a, [hl+]
+    ld c, a
+    push hl
+    ld h, b
+    ld l, c
+    call AIMod_CallHLForEachViableMove
+    pop hl
+    jr .loop
 
 ; Zero if none, non-zero if at least one
 AIMod_HavePhysicalMoves:
     xor a
     ld [wAIModAIBuffer], a
     ld hl, .check_physical
-    call AIMod_CallHLForEachUnprioritizedMove
+    call AIMod_CallHLForEachViableMove
     ld a, [wAIModAIBuffer]
     and a
     ret
@@ -46,7 +61,7 @@ AIMod_DeprioritizeAttackRaisingMoves:
     ld de, wAIModAIMovePriority
     ld b, 0
     ld hl, .check_move
-    call AIMod_CallHLForEachUnprioritizedMove
+    call AIMod_CallHLForEachViableMove
     ret
 .check_move
     ld c, a
@@ -90,36 +105,18 @@ AIMod_PrioritizeBoostingMoves:
     ; If neutral, we should boost it!
     ld a, [bc]
     cp 7
-    jr z, .prioritize_slightly
+    jr z, AIMod_PrioritizeStatMod
 
     ; If above neutral, deprioritize it
-    jr nc, .deprioritize
+    jr c, AIMod_DeprioritizeExcessiveStatMod
 
     ; Below neutral? If this gets us up to +0 or higher, we should use it!
     add d
     cp 7
-    jr nc, .prioritize_greatly
+    jr nc, AIMod_PrioritizeUsefulStatMod
 
     ; Otherwise, don't.
-    jr .deprioritize
-
-.prioritize_slightly
-    ld a, [hl]
-    add AIMod_USEFUL_STAT_MOD_MOVE_BOOST
-    ld [hl], a
-    ret
-
-.prioritize_greatly
-    ld a, [hl]
-    add AIMod_VERY_USEFUL_STAT_MOD_MOVE_BOOST
-    ld [hl], a
-    ret
-
-.deprioritize
-    ld a, [hl]
-    sub AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY
-    ld [hl], a
-    ret
+    jr AIMod_DeprioritizeExcessiveStatMod
 
 AIMod_PrioritizeDroppingMoves:
     ld hl, wAIModAIMovePriority
@@ -139,33 +136,54 @@ AIMod_PrioritizeDroppingMoves:
     ; If neutral, we should drop it!
     ld a, [bc]
     cp 7
-    jr z, .prioritize_slightly
+    jr z, AIMod_PrioritizeStatMod
 
     ; If below neutral, deprioritize it
-    jr c, .deprioritize
+    jr c, AIMod_DeprioritizeExcessiveStatMod
 
     ; Above neutral? If this gets us up to +0 or lower, we should use it!
     dec d
     cp 7
-    jr c, .prioritize_greatly
+    jr c, AIMod_PrioritizeUsefulStatMod
 
     ; Otherwise, don't.
-    jr .deprioritize
+    jr AIMod_DeprioritizeExcessiveStatMod
 
-.prioritize_slightly
+AIMod_PrioritizeStatusInflictingMoves:
+    ld hl, wAIModAIMovePriority
+    ld d, 0
+    ld e, a
+    add hl, de
+
+    ; Ignore non-status moves
+    ld a, [wEnemyMovePower]
+    and a
+    ret nz
+
+    ld hl, AIMod_EffectsThatDealStatusEffects
+    call AIMod_LoadedMoveEffectInList
+    ret nc
+
+    ; Give it a whirl!
     ld a, [hl]
-    add AIMod_USEFUL_STAT_MOD_MOVE_BOOST
+    add AIMod_STATUS_MOVE_BOOST
     ld [hl], a
     ret
 
-.prioritize_greatly
+AIMod_DeprioritizeExcessiveStatMod:
     ld a, [hl]
-    add AIMod_VERY_USEFUL_STAT_MOD_MOVE_BOOST
+    add a, AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY
     ld [hl], a
     ret
 
-.deprioritize
+AIMod_PrioritizeUsefulStatMod:
     ld a, [hl]
-    sub AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY
+    add a, AIMod_VERY_USEFUL_STAT_MOD_MOVE_BOOST
+    ld [hl], a
+    ret
+
+AIMod_PrioritizeStatMod:
+    ld a, [hl]
+    add a, AIMod_USEFUL_STAT_MOD_MOVE_BOOST
     ld [hl], a
     ret

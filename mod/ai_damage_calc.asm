@@ -351,7 +351,7 @@ AIMod_DamageCalcDamageRange:
 
 ; Maybe not 100% accurate to Gen 1, since neutral moves can technically do 1 less damage? Don't care.
 ;
-; Returns N/4
+; Returns A = N/4
 AIMod_FindOverallTypeEffectivenessOfLoadedMove:
     ; Fixed damage moves ignore type effectiveness
     ld a, [wEnemyMoveEffect]
@@ -478,7 +478,7 @@ AIMod_DamageTests:
     ; Do damage tests
     ld b, 0
     ld hl, AIMod_DamageTestForMove
-    call AIMod_CallHLForEachUnprioritizedMove
+    call AIMod_CallHLForEachViableMove
 
     ; If they all have 255+ turns to KO, don't continue
     ld a, [wAIModAIBuffer+0]
@@ -487,7 +487,7 @@ AIMod_DamageTests:
 
     ; Cool, let's set the priority
     ld hl, AIMod_SetDamagingBaseMovePriority
-    call AIMod_CallHLForEachUnprioritizedMove
+    call AIMod_CallHLForEachViableMove
 
     ret
 
@@ -592,9 +592,24 @@ AIMod_DamageTestForMove:
     ld hl, wAIModAITurnsToKill
     add hl, bc
     ld [hl], a
-
-    ; Is it a new record?
     ld b, a
+
+    ; If using EXPLOSION or SELF DESTRUCT, don't prioritize unless it'd be a OHKO, or we're <25% HP
+    cp 1
+    jr z, .continue
+    ld a, [wEnemyMoveEffect]
+    cp EXPLODE_EFFECT
+    jr nz, .continue
+    call AIMod_EnemyAtQuarterHP
+    jr nc, .continue
+
+    ; Don't prioritize it then.
+    ld a, 255
+    ld b, a
+    ld [hl], a
+
+.continue
+    ; Is it a new record?
     ld a, [wAIModAIBuffer+0]
     cp b
     ld hl, wAIModAIBuffer+1

@@ -176,14 +176,7 @@ AIMod_RedundantSideEffectJumpTable:
 
 ; ignore if substitute already up or under 25% HP
 .substitute_effect
-    ld hl, wEnemyMonHP
-    call AIMod_Double16
-    call AIMod_Double16
-    ld de, wEnemyMonHP
-    ld bc, wEnemyMonMaxHP
-    call AIMod_CMP16
-    call AIMod_Halve16
-    call AIMod_Halve16
+    call AIMod_EnemyAtQuarterHP
     jr nc, AIMod_IgnoreEffect
 
     ld hl, wEnemyBattleStatus2
@@ -255,4 +248,22 @@ AIMod_PatchRedundantEffects:
     dec c
     jr nz, .loop
 
+    ret
+
+; Returns carry if >25% HP
+AIMod_EnemyAtQuarterHP:
+    push hl
+    push de
+    push bc
+    ld hl, wEnemyMonHP
+    call AIMod_Double16
+    call AIMod_Double16
+    ld de, wEnemyMonHP
+    ld bc, wEnemyMonMaxHP
+    call AIMod_CMP16
+    call AIMod_Halve16
+    call AIMod_Halve16
+    pop bc
+    pop de
+    pop hl
     ret

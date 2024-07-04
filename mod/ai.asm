@@ -3,16 +3,16 @@
 ; 0 = disabled
 ; 1 = enabled but using it would have no effect
 ; 2+ = priority (higher = better)
-; Default = 127
+; Default = 100
 
-DEF AIMod_DEFAULT_MOVE_PRIORITY EQU 127
-DEF AIMod_MAX_MOVE_PRIORITY EQU 255
+DEF AIMod_DEFAULT_MOVE_PRIORITY EQU 100
 DEF AIMod_MAX_DEPRIORITIZED_MOVE EQU 1
 
 INCLUDE "mod/ai_move_types.asm"
 INCLUDE "mod/ai_damage_calc.asm"
 INCLUDE "mod/ai_redundant_move_effects.asm"
 INCLUDE "mod/ai_status_moves.asm"
+INCLUDE "mod/ai_trainer_class_priorities.asm"
 
 AIMod_EnemyTrainerChooseMoves::
     call AIMod_TestSetup
@@ -24,6 +24,7 @@ AIMod_EnemyTrainerChooseMoves::
     call AIMod_DeprioritizeNoEffectMoves
     call AIMod_DamageTests
     call AIMod_PrioritizeStatusMoves
+    call AIMod_TrainerClassPriorities
 
 .find_best_move
     call AIMod_HighestPriorityMove
@@ -44,7 +45,6 @@ AIMod_EnemyTrainerChooseMoves::
     ld hl, wEnemyMonMoves
     add hl, bc
     ld a, [hl]
-
     ld [wEnemySelectedMove], a
     ret
 
@@ -325,7 +325,7 @@ AIMod_CheckIfNoEffect:
 ; Calls hl, loading each move and having the move slot in A.
 ;
 ; BC and DE are passed through into the function.
-AIMod_CallHLForEachUnprioritizedMove:
+AIMod_CallHLForEachViableMove:
     push bc
     push de
     ld c, NUM_MOVES
@@ -362,16 +362,13 @@ AIMod_CallHLForEachUnprioritizedMove:
 
 AIMod_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, TACKLE
+    ld a, DOUBLE_KICK
     ld [hl+], a
-    ld a, BIDE
-    ld [hl+], a
-    ld a, SCREECH
+    ld a, SELFDESTRUCT
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a
-
-    ld a, 6
-    ld [wPlayerMonDefenseMod], a
+    ld a, NO_MOVE
+    ld [hl+], a
 
     ret
