@@ -15,7 +15,7 @@ INCLUDE "mod/ai_status_moves.asm"
 INCLUDE "mod/ai_trainer_class_priorities.asm"
 
 AIMod_EnemyTrainerChooseMoves::
-    call AIMod_TestSetup
+    ; call AIMod_TestSetup
     call AIMod_PrioritizeMetronome
     jr c, .find_best_move
 
@@ -24,6 +24,7 @@ AIMod_EnemyTrainerChooseMoves::
     call AIMod_DeprioritizeNoEffectMoves
     call AIMod_DamageTests
     call AIMod_PrioritizeStatusMoves
+    call AIMod_PrioritizeBindingMoves
     call AIMod_TrainerClassPriorities
 
 .find_best_move
@@ -83,6 +84,25 @@ AIMod_PrioritizeMetronome:
     ld [hl], 69
 
     scf
+    ret
+
+AIMod_PrioritizeBindingMoves:
+    ld hl, .do_it
+    jp AIMod_CallHLForEachViableMove
+.do_it
+    ld hl, wAIModAIMovePriority
+    ld d, 0
+    ld e, a
+    add hl, de
+
+    ld a, [wEnemyMoveEffect]
+    cp TRAPPING_EFFECT
+    ret nz
+
+    ld a, [hl]
+    add AIMod_NOT_BEST_DAMAGING_MOVE_DEPRIORITY
+    ld [hl], a
+
     ret
 
 AIMod_HighestPriorityMove:
@@ -362,9 +382,9 @@ AIMod_CallHLForEachViableMove:
 
 AIMod_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, DOUBLE_KICK
+    ld a, BIND
     ld [hl+], a
-    ld a, SELFDESTRUCT
+    ld a, SURF
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a

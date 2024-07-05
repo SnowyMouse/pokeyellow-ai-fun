@@ -47,12 +47,12 @@ AIMod_DividePlayerHPByDamage:
     ; If something takes more than 10 turns to KO, then it hardly matters lol
     ld a, l
     cp 10
-    jr z, .done
+    jr z, .done_loop
 
     ; If there is 0 HP left to subtract, then we're good.
     ld a, c
     or b
-    jr z, .done
+    jr z, .done_loop
 
     ; Increase loop counter, otherwise. We're going in.
     inc l
@@ -70,8 +70,31 @@ AIMod_DividePlayerHPByDamage:
     ; if we didn't underflow, continue. otherwise, we're done
     jr nc, .loop
 
-.done
+.done_loop
+    ; if it's a charging effect, double it
+    ld a, [wEnemyMoveEffect]
+    cp CHARGE_EFFECT
+    jr nz, .not_charge
+    sla l
+    jr .finish
+
+.not_charge
+    ; Hyper Beam's turn count is doubled if there is more than 1 turn left
+    cp HYPER_BEAM_EFFECT
+    jr nz, .finish
     ld a, l
+    cp 2
+    jr c, .finish
+    sla l
+
+.finish
+    ld a, l
+
+    ; if the player has a substitute up, +1 turn
+    ld hl, wPlayerBattleStatus2
+    bit HAS_SUBSTITUTE_UP, [hl]
+    ret z
+    inc a
     ret
 
 AIMod_DamageCalcFixedDamage:

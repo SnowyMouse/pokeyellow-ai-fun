@@ -8,6 +8,8 @@ AIMod_StatusMovesForEach:
     bigdw AIMod_PrioritizeBoostingMoves
     bigdw AIMod_PrioritizeDroppingMoves
     bigdw AIMod_PrioritizeStatusInflictingMoves
+    bigdw AIMod_PrioritizeEvasionMoves
+    bigdw AIMod_PrioritizeAccuracyLoweringMoves
     db -1
 
 AIMod_PrioritizeStatusMoves:
@@ -105,18 +107,18 @@ AIMod_PrioritizeBoostingMoves:
     ; If neutral, we should boost it!
     ld a, [bc]
     cp 7
-    jr z, AIMod_PrioritizeStatMod
+    jp z, AIMod_PrioritizeStatMod
 
     ; If above neutral, deprioritize it
-    jr c, AIMod_DeprioritizeExcessiveStatMod
+    jp c, AIMod_DeprioritizeExcessiveStatMod
 
     ; Below neutral? If this gets us up to +0 or higher, we should use it!
     add d
     cp 7
-    jr nc, AIMod_PrioritizeUsefulStatMod
+    jp nc, AIMod_PrioritizeUsefulStatMod
 
     ; Otherwise, don't.
-    jr AIMod_DeprioritizeExcessiveStatMod
+    jp AIMod_DeprioritizeExcessiveStatMod
 
 AIMod_PrioritizeDroppingMoves:
     ld hl, wAIModAIMovePriority
@@ -141,7 +143,7 @@ AIMod_PrioritizeDroppingMoves:
     ; If below neutral, deprioritize it
     jr c, AIMod_DeprioritizeExcessiveStatMod
 
-    ; Above neutral? If this gets us up to +0 or lower, we should use it!
+    ; Above neutral? If this gets us down to +0 or lower, we should use it!
     dec d
     cp 7
     jr c, AIMod_PrioritizeUsefulStatMod
@@ -170,9 +172,60 @@ AIMod_PrioritizeStatusInflictingMoves:
     ld [hl], a
     ret
 
+AIMod_PrioritizeEvasionMoves:
+    ld hl, wAIModAIMovePriority
+    ld d, 0
+    ld e, a
+    add hl, de
+
+    ld a, [wEnemyMoveEffect]
+    cp EVASION_UP1_EFFECT
+    jr z, .ok
+    ld a, [wEnemyMoveEffect]
+    cp EVASION_UP2_EFFECT
+    ret nz
+
+.ok
+    ; If at +2, don't raise evasion further
+    ld a, [wEnemyMonEvasionMod]
+    cp 7+1
+    jr nc, AIMod_DeprioritizeExcessiveStatMod
+
+    ; If at +1, we're neutral about this
+    ret z
+
+    ; Raising evasion is fun
+    jr AIMod_PrioritizeUsefulStatMod
+
+AIMod_PrioritizeAccuracyLoweringMoves:
+    ld hl, wAIModAIMovePriority
+    ld d, 0
+    ld e, a
+    add hl, de
+
+    ld a, [wEnemyMoveEffect]
+    cp ACCURACY_DOWN1_EFFECT
+    jr z, .ok
+    ld a, [wEnemyMoveEffect]
+    cp ACCURACY_DOWN1_EFFECT
+    ret nz
+
+.ok
+    ; If at -2, don't drop accuracy further
+    ld a, [wPlayerMonAccuracyMod]
+    cp 7-1
+    jr c, AIMod_DeprioritizeExcessiveStatMod
+
+    ; If at -1, we're neutral about this
+    ret z
+
+    ; You love Sand Attack, don't you?
+    jr AIMod_PrioritizeStatMod
+
+
 AIMod_DeprioritizeExcessiveStatMod:
     ld a, [hl]
-    add a, AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY
+    sub a, AIMod_EXCESSIVE_STAT_MOD_MOVE_PENALTY
     ld [hl], a
     ret
 
