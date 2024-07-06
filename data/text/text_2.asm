@@ -26,6 +26,11 @@ _BoxWillBeClearedText::
 	line "cleared."
 	done
 
+_AIMod_AgathaOutplayedYouText::
+	text "AGATHA: Ohoho! I"
+	line "saw that coming."
+	prompt
+
 _TradeWentToText::
 	text_ram wStringBuffer
 	text " went"

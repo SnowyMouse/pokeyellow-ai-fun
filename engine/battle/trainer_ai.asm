@@ -371,11 +371,13 @@ BrockAI:
 	jp AIUseFullHeal
 
 MistyAI:
+	ret ; AI MOD: NAH
 	cp 25 percent + 1
 	ret nc
 	jp AIUseXDefend
 
 LtSurgeAI:
+	ret ; AI MOD: ONLY MAKE SURGE USE AN X SPEED IF FASTER
 	cp 25 percent + 1
 	ret nc
 	jp AIUseXSpeed
@@ -389,6 +391,7 @@ ErikaAI:
 	jp AIUseSuperPotion
 
 KogaAI:
+	ret ; AI MOD: ONLY MAKE HIM USE X ATTACK IF NEEDED TODO
 	cp 13 percent - 1
 	ret nc
 	jp AIUseXAttack
@@ -402,6 +405,7 @@ BlaineAI:
 	jp AIUseSuperPotion
 
 SabrinaAI:
+	ret ; AI MOD: NAH
 	cp 25 percent + 1
 	ret nc
 	jp AIUseXDefend
@@ -436,14 +440,40 @@ BrunoAI:
 	jp AIUseXDefend
 
 AgathaAI:
-	cp 8 percent
-	jp c, AISwitchIfEnoughMons
-	cp 50 percent + 1
-	ret nc
-	ld a, 4
-	call AICheckIfHPBelowFraction
-	ret nc
-	jp AIUseSuperPotion
+	; AI MOD: Agatha will now outplay you if you use Dig on her first Pokemon
+	ld a, [wPlayerMoveNum]
+	cp DIG
+	jr nz, GenericAI ; jump to GenericAI because this might have set the carry flag
+	; is it her first pokemon?
+	ld a, [wEnemyMonPartyPos]
+	and a
+	ret nz
+	; are they charging it?
+	ld hl, wPlayerBattleStatus1
+	bit CHARGING_UP, [hl]
+	ret z
+	; don't get rid of a perfectly good substitute
+	ld hl, wEnemyBattleStatus2
+	bit HAS_SUBSTITUTE_UP, [hl]
+	ret nz
+	; Golbat must not be fainted
+	ld hl, wEnemyMon2HP
+	ld a, [hl+]
+	ld b, a
+	ld a, [hl]
+	or b
+	ret z
+	; hahaha
+	ld hl, AIMod_AIAgathaOutplayedYouText
+	call PrintText
+	jp AISwitchIfEnoughMons
+
+	; cp 50 percent + 1
+	; ret nc
+	; ld a, 4
+	; call AICheckIfHPBelowFraction
+	; ret nc
+	; jp AIUseSuperPotion
 
 LanceAI:
 	cp 50 percent + 1
@@ -748,4 +778,8 @@ AIPrintItemUse_:
 
 AIBattleUseItemText:
 	text_far _AIBattleUseItemText
+	text_end
+
+AIMod_AIAgathaOutplayedYouText:
+	text_far _AIMod_AgathaOutplayedYouText
 	text_end

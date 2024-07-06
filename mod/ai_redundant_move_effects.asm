@@ -11,8 +11,13 @@ AIMod_PatchRedundantEffect:
     call AIMod_FindStatChangingEffect
     jr c, .stat_drop_effect
 
-    ; Check other things
+    ; Poison types cannot be poisoned.
     ld a, [wEnemyMoveEffect]
+    ld b, POISON
+    cp POISON_EFFECT
+    jr z, .type_immunity
+    cp TWINEEDLE_EFFECT
+    jr z, .type_immunity
 
     ; Check if this is an attacking move that deals a status.
     ld hl, AIMod_EffectsThatDealStatusSideEffects
@@ -49,10 +54,12 @@ AIMod_PatchRedundantEffect:
     ld l, a
     jp hl
 
+
 .status_side_effect
     ; If their typing matches the type's move, this move will not inflict a status.
     ld a, [wEnemyMoveType]
     ld b, a
+.type_immunity
     ld a, [wBattleMonType1]
     cp b
     jr z, .ignore
