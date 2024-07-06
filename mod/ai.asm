@@ -304,6 +304,15 @@ AIMod_CheckIfNoEffect:
     and a
     jr z, .check_status_move
 
+    ; Dream Eater won't work if you're not asleep
+    ld a, [wEnemyMoveEffect]
+    cp DREAM_EATER_EFFECT
+    jr nz, .check_power
+    ld a, [wBattleMonStatus]
+    and SLP_MASK
+    jr z, .no_effect
+
+.check_power
     ; 1 base power but no effect? Seems it is a useless move.
     cp 1
     jr nz, .continue
@@ -382,9 +391,9 @@ AIMod_EnableMovePatches:
 
 AIMod_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, AGILITY
-    ld [hl+], a
     ld a, HEADBUTT
+    ld [hl+], a
+    ld a, DREAM_EATER
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a
