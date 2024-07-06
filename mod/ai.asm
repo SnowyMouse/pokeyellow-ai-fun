@@ -15,7 +15,8 @@ INCLUDE "mod/ai_status_moves.asm"
 INCLUDE "mod/ai_trainer_class_priorities.asm"
 
 AIMod_EnemyTrainerChooseMoves::
-    ; call AIMod_TestSetup
+    call AIMod_EnableMovePatches
+    call AIMod_TestSetup
     call AIMod_PrioritizeMetronome
     jr c, .find_best_move
 
@@ -78,22 +79,36 @@ AIMod_PrioritizeMetronome:
     ld [hl], a
 
     call AIMod_FlipCToA
-    ld c, a
-    ld b, 0
-    add hl, bc
+    call AIMod_AddAToHL
     ld [hl], 69
 
     scf
     ret
 
 AIMod_PrioritizeBindingMoves:
+    ; Are we faster? If not, don't do it.
+    call AIMod_CheckIfOutspeed
+    ret nc
+
+    ; Are we at -accuracy or the player is at +evasion? If not, don't do it.
+    ld a, [wEnemyMonAccuracyMod]
+    cp 7
+    ret c
+    ld a, [wPlayerMonEvasionMod]
+    cp 7+1
+    ret nc
+
+    ; Does it make sense to try to whittle down the player?
+    call AIMod_PlayerAtHalfHP
+    ret nc
+
+    ; Here we go
     ld hl, .do_it
     jp AIMod_CallHLForEachViableMove
+
 .do_it
     ld hl, wAIModAIMovePriority
-    ld d, 0
-    ld e, a
-    add hl, de
+    call AIMod_AddAToHL
 
     ld a, [wEnemyMoveEffect]
     cp TRAPPING_EFFECT
@@ -179,6 +194,12 @@ AIMod_ReadMoveDataAtIndex:
     push af
     call AIMod_MoveAtIndex
     call AIMod_ReadMoveData
+    ld a, [wAIModAIPatchedEffectsEnabled]
+    and a
+    jr nz, .patch
+    pop af
+    ret
+.patch
     pop af
     call AIMod_ApplyEffectPatchAtIndex
     ret
@@ -187,9 +208,7 @@ AIMod_ApplyEffectPatchAtIndex:
     push bc
     push hl
     ld hl, wAIModAIPatchedEffects
-    ld b, 0
-    ld c, a
-    add hl, bc
+    call AIMod_AddAToHL
     ld a, [hl]
     ld [wEnemyMoveEffect], a
     pop hl
@@ -197,15 +216,11 @@ AIMod_ApplyEffectPatchAtIndex:
     ret
 
 AIMod_MoveAtIndex:
-    push bc
     push hl
-    ld b, 0
-    ld c, a
     ld hl, wEnemyMonMoves
-    add hl, bc
+    call AIMod_AddAToHL
     ld a, [hl]
     pop hl
-    pop bc
     ret
 
 AIMod_FlipCToA:
@@ -248,9 +263,7 @@ AIMod_Double16:
     inc hl
     sla [hl]
     dec hl
-    ld a, [hl]
-    rla
-    ld [hl], a
+    rl [hl]
     pop af
     ret
 
@@ -259,52 +272,20 @@ AIMod_Halve16:
     push af
     srl [hl]
     inc hl
-    ld a, [hl]
-    rra
-    ld [hl-], a
+    rr [hl]
+    dec hl
     pop af
-    ret
-    
-AIMod_CopyPlayerSpeedToDividend:
-    xor a
-    ldh [hDividend+0], a
-    ldh [hDividend+1], a
-    ld a, [wBattleMonSpeed]
-    ldh [hDividend+2], a
-    ld a, [wBattleMonSpeed+1]
-    ldh [hDividend+3], a
-    ret
+    ret 
 
-; Returns with carry if we do NOT outspeed
-AIMod_CheckIfHalfOutspeed:
-    call AIMod_CopyPlayerSpeedToDividend
-    ld a, 2
-    ldh [hDivisor], a
-    call Divide
-    jr AIMod_CheckDividendVersusOurSpeed
-
-; Returns with carry if we do NOT outspeed
+; Returns with carry if we outspeed
 AIMod_CheckIfOutspeed:
-    call AIMod_CopyPlayerSpeedToDividend
-    ; fallthrough
-
-; Returns with carry if we do NOT outspeed what is in hQuotient
-AIMod_CheckDividendVersusOurSpeed:
-    ldh a, [hQuotient+2]
-    ld b, a
-    ld a, [wEnemyMonSpeed]
-    cp b
-    ret c ; no outspeed
-    jr nz, .outspeed
-
-    ldh a, [hQuotient+3]
-    ld b, a
-    ld a, [wEnemyMonSpeed+1]
-    cp b
-    ret c ; no outspeed
-
-.outspeed
-    and a
+    push de
+    push bc
+    ld de, wEnemyMonSpeed
+    ld bc, wBattleMonSpeed
+    call AIMod_CMP16
+    pop bc
+    pop de
     ret
 
 AIMod_CheckIfNoEffect:
@@ -376,19 +357,39 @@ AIMod_CallHLForEachViableMove:
     pop de
     pop bc
     ret
-
 .call_hl
     jp hl
 
+AIMod_DisableMovePatches:
+    push af
+    xor a
+    ld [wAIModAIPatchedEffectsEnabled], a
+    pop af
+    ret
+AIMod_EnableMovePatches:
+    push af
+    ld a, 1
+    ld [wAIModAIPatchedEffectsEnabled], a
+    pop af
+    ret
+
 AIMod_TestSetup:
     ld hl, wEnemyMonMoves
-    ld a, BIND
+    ld a, AGILITY
     ld [hl+], a
-    ld a, SURF
+    ld a, HEADBUTT
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a
     ld a, NO_MOVE
     ld [hl+], a
 
+    ret
+
+AIMod_AddAToHL:
+    push de
+    ld d, 0
+    ld e, a
+    add hl, de
+    pop de
     ret

@@ -1,11 +1,35 @@
+; ignoring moves that drop stats as a side effect since we don't want to deprioritize those...
 AIMod_EffectsThatBoostAttack:
     db ATTACK_UP1_EFFECT
     db ATTACK_UP2_EFFECT
     db -1
-
-AIMod_EffectsThatLowerDefense: ; ignoring moves that drop defense as a side effect since we don't want to deprioritize those...
+AIMod_EffectsThatLowerDefense:
     db DEFENSE_DOWN1_EFFECT
     db DEFENSE_DOWN2_EFFECT
+    db -1
+AIMod_EffectsThatBoostSpeed:
+    db SPEED_UP1_EFFECT
+    db SPEED_UP2_EFFECT
+    db -1
+AIMod_EffectsThatLowerSpeed:
+    db SPEED_DOWN1_EFFECT
+    db SPEED_DOWN2_EFFECT
+    db -1
+
+AIMod_EffectsThatBenefitFromBeingFaster:
+    db DRAIN_HP_EFFECT
+    db EXPLODE_EFFECT
+    db BIDE_EFFECT
+    db FLINCH_SIDE_EFFECT1
+    db FLINCH_SIDE_EFFECT2
+    db SLEEP_EFFECT
+    db CHARGE_EFFECT
+    db TRAPPING_EFFECT
+    db FLY_EFFECT
+    db HEAL_EFFECT
+    db SUBSTITUTE_EFFECT
+    db HYPER_BEAM_EFFECT
+    db METRONOME_EFFECT
     db -1
 
 ; Ignoring evasion/accuracy moves because those will have special handling
@@ -112,7 +136,7 @@ AIMod_LoadedMoveEffectInList:
     and a
     ret
 
-; If we have multiple moves with the same number of turns to KO, prioritize moves with good effects 
+; If we have multiple moves with the same number of turns to KO, prioritize moves with good effects
 ; higher score = better
 AIMod_SameTurnToKOMoveScoring:
     db DEFENSE_DOWN_SIDE_EFFECT, 10
@@ -163,7 +187,7 @@ AIMod_GetSameTurnToKOMoveScore:
     ld a, 5
     add b
     ld b, a
-    
+
 .clean_up
     ld a, b
     pop bc

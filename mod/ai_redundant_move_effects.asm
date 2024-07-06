@@ -194,7 +194,7 @@ AIMod_RedundantSideEffectJumpTable:
     call AIMod_IgnoreIfSubstituteUp
     ret c
     call AIMod_CheckIfOutspeed
-    ret nc
+    ret c
     ; fallthrough
 
 AIMod_IgnoreEffect:
@@ -262,6 +262,40 @@ AIMod_EnemyAtQuarterHP:
     ld bc, wEnemyMonMaxHP
     call AIMod_CMP16
     call AIMod_Halve16
+    call AIMod_Halve16
+    pop bc
+    pop de
+    pop hl
+    ret
+
+; Returns carry if >25% HP
+AIMod_PlayerAtQuarterHP:
+    push hl
+    push de
+    push bc
+    ld hl, wBattleMonHP
+    call AIMod_Double16
+    call AIMod_Double16
+    ld de, wBattleMonHP
+    ld bc, wBattleMonMaxHP
+    call AIMod_CMP16
+    call AIMod_Halve16
+    call AIMod_Halve16
+    pop bc
+    pop de
+    pop hl
+    ret
+
+; Returns carry if >50% HP
+AIMod_PlayerAtHalfHP:
+    push hl
+    push de
+    push bc
+    ld hl, wBattleMonHP
+    call AIMod_Double16
+    ld de, wBattleMonHP
+    ld bc, wBattleMonMaxHP
+    call AIMod_CMP16
     call AIMod_Halve16
     pop bc
     pop de

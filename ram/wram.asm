@@ -549,8 +549,8 @@ wAIModAITurnsToKill:: ds 4
 wAIModAIDamage:: ds 2
 wAIModAIBuffer:: ds 4
 wAIModAIPatchedEffects:: ds 4
-
-	ds 41
+wAIModAIPatchedEffectsEnabled:: db
+	ds 40
 
 wNPCMovementDirections2:: ds 10
 ; used in Pallet Town scripted movement

@@ -29,9 +29,7 @@ AIMod_TrainerClassPriorities:
 ; Koga likes to get Toxic and Sleep up, and then spam Double Team if either are up.
 AIMod_TrainerKoga:
     ld hl, wAIModAIMovePriority
-    ld d, 0
-    ld e, a
-    add hl, de
+    call AIMod_AddAToHL
 
     ; Koga wants to set up Toxic
     ld a, [wEnemyMoveNum]
@@ -65,9 +63,7 @@ AIMod_TrainerKoga:
 ; Scientists have a bias towards supereffective moves
 AIMod_TrainerScientist:
     ld hl, wAIModAIMovePriority
-    ld d, 0
-    ld e, a
-    add hl, de
+    call AIMod_AddAToHL
 
     ld a, [wEnemyMovePower]
     and a
