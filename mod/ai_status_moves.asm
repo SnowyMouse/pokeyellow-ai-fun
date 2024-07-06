@@ -261,7 +261,6 @@ AIMod_PrioritizeAttackRaisingMovesIfBurned:
     call AIMod_PrioritizeUsefulStatMod
     jr AIMod_PrioritizeUsefulStatMod
 
-; TODO: TEST UNCOMMITTED CHANGES!
 ; Don't use speed lowering moves if +50% speed would not outspeed the opponent
 AIMod_DeprioritizeUselessSpeedLoweringMoves:
     ld hl, wAIModAIMovePriority
@@ -281,7 +280,6 @@ AIMod_DeprioritizeUselessSpeedLoweringMoves:
     pop hl
     ret
 
-; TODO: TEST UNCOMMITTED CHANGES!
 ; Don't use speed raising moves if +100% speed would not outspeed the opponent
 AIMod_DeprioritizeUselessSpeedRaisingMoves:
     ld hl, wAIModAIMovePriority
@@ -301,6 +299,7 @@ AIMod_DeprioritizeUselessSpeedRaisingMoves:
     pop hl
     ret
 
+; TODO: if it's a speed lowering move, check other party members' speeds!
 AIMod_DeprioritizeSpeedMoveWithStatStage:
     push af
 

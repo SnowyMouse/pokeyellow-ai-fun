@@ -15,8 +15,11 @@ INCLUDE "mod/ai_status_moves.asm"
 INCLUDE "mod/ai_trainer_class_priorities.asm"
 
 AIMod_EnemyTrainerChooseMoves::
+    ; Suppress all interrupts, including vblank
+    di
+
     call AIMod_EnableMovePatches
-    call AIMod_TestSetup
+    ; call AIMod_TestSetup
     call AIMod_PrioritizeMetronome
     jr c, .find_best_move
 
@@ -48,7 +51,11 @@ AIMod_EnemyTrainerChooseMoves::
     add hl, bc
     ld a, [hl]
     ld [wEnemySelectedMove], a
-    ret
+
+    ; Suppress any interrupts we got
+    xor a
+	ldh [rIF], a
+    reti
 
 AIMod_PrioritizeMetronome:
     ; Metronome is disabled? :(
